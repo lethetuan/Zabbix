@@ -185,9 +185,6 @@ sudo nano docker-compose.yml
 
 #Dán cấu hình kiến trúc sau vào file.
 
-
-version: '3.8'
-
 services:
   postgres-server:
     image: postgres:16-alpine
@@ -198,8 +195,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
-      # Giữ lại toàn bộ dữ liệu DB khi container bị xóa
-      - ./zbx_env/var/lib/postgresql/data:/var/lib/postgresql/data:rw
+      # Named Volume: Giao phó cho Docker quản lý quyền (fix lỗi userns-remap)
+      - zabbix-postgres-data:/var/lib/postgresql/data
     networks:
       - zabbix-net
 
@@ -214,15 +211,15 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - ZBX_CACHESIZE=256M # Tối ưu RAM cho bộ nhớ cache (Mặc định 8M rất dễ treo)
-      - ZBX_STARTPINGERS=10 # Tối ưu cho dân Network (fping ICMP liên tục)
-      - ZBX_STARTSNMPPOLLERS=10 # Mở rộng process đọc SNMP từ Router/Switch
-      - ZBX_TIMEOUT=15 # Tránh lỗi timeout khi query thiết bị mạng chậm
+      - ZBX_CACHESIZE=256M
+      - ZBX_STARTPINGERS=10
+      - ZBX_STARTSNMPPOLLERS=10
+      - ZBX_TIMEOUT=15
     volumes:
+      # Các thư mục này map dạng Read-Only (ro) nên không bị ảnh hưởng bởi lỗi phân quyền
       - ./zbx_env/usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts:ro
       - ./zbx_env/usr/lib/zabbix/externalscripts:/usr/lib/zabbix/externalscripts:ro
       - ./zbx_env/var/lib/zabbix/snmptraps:/var/lib/zabbix/snmptraps:ro
-    # Đòi hỏi quyền NET_RAW để Zabbix có thể gửi gói tin ICMP (Ping)
     cap_add:
       - NET_RAW
       - NET_ADMIN
@@ -236,7 +233,7 @@ services:
     container_name: zabbix-web
     restart: always
     ports:
-      - "80:8080" # Map port 80 của host vào port 8080 của Nginx trong container
+      - "80:8080"
       - "443:8443"
     environment:
       - ZBX_SERVER_HOST=zabbix-server
@@ -253,10 +250,12 @@ services:
 networks:
   zabbix-net:
     driver: bridge
-    # Ép dải IP cụ thể để không xung đột với các mạng định tuyến (Routing) trong doanh nghiệp
     ipam:
       config:
         - subnet: 172.30.0.0/16
+
+volumes:
+  zabbix-postgres-data:
 
         
 #Bước 4: Triển khai và Kiểm tra sự cố
