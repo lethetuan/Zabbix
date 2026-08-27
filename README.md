@@ -269,6 +269,10 @@ sudo docker compose up -d
 <img width="1104" height="172" alt="image" src="https://github.com/user-attachments/assets/af05d78f-44b0-4a5a-98cd-fa9491a0a5cd" />
 
 
+#Kiểm tra tiến trình Import Database (Bắt buộc). Lần đầu tiên chạy, Zabbix Server sẽ tự động bung cấu trúc bảng (schema) vào database PostgreSQL trắng. Quá trình này mất khoảng 30 giây đến 1 phút tùy tốc độ ổ cứng. Hãy soi log để chắc chắn không có lỗi SQL nào xảy ra: 
+
+sudo docker logs -f zabbix-server
+
 Bước 5: Truy cập và dọn dẹp. Mở trình duyệt truy cập: http://<IP_SERVER>
 
 Tài khoản mặc định siêu quan trọng cần đổi ngay:
