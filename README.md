@@ -1,11 +1,13 @@
-# Zabbix
+# Chi tiết các bước triển khai Zabbix
 
 #Bước 1: Cài đặt Docker
 
 #Cập nhật index các gói phần mềm
+
 sudo apt update && sudo apt upgrade -y
 
 #Cài đặt các dependencies cần thiết
+
 sudo apt install -y \
     ca-certificates \
     curl \
@@ -16,18 +18,24 @@ sudo apt install -y \
 
 #Tạo thư mục chứa keyrings nếu chưa có
 
+
 sudo mkdir -p /etc/apt/keyrings
 
+
 sudo chmod 0755 /etc/apt/keyrings
+
 
 #Tải và lưu GPG key của Docker an toàn
 
 
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
+
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
+
 #Thêm Docker repository vào APT sources
+
 
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
@@ -35,18 +43,25 @@ echo \
 
 #Cập nhật lại apt cache để nhận repo mới
 
+
 sudo apt update && sudo apt upgrade -y
 
 
+
 #Cài đặt các thành phần cốt lõi của Docker.
+
 
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 #Cấu hình bảo mật Docker Daemon (Quan trọng). Mặc định Docker daemon khá "thoải mái". Nếu đang cài Docker mới hoàn toàn --> Thực hiện bước này. Chúng ta cần tạo file /etc/docker/daemon.json để siết chặt lại.
 
+
 sudo mkdir -p /etc/docker
 
+
 sudo nano /etc/docker/daemon.json
+
+Dán nội dung dưới vào file daemon.json và lưu lại.
 
 {
   "icc": false,
@@ -60,6 +75,7 @@ sudo nano /etc/docker/daemon.json
   "live-restore": true,
   "userland-proxy": false
 }
+
 
 Giải thích các thông số bảo mật:
 
