@@ -142,7 +142,7 @@ sudo mkdir -p /opt/zabbix
 cd /opt/zabbix
 
 #Tạo các thư mục persistent data
-sudo mkdir -p ./zbx_env/var/lib/postgresql/data
+
 
 sudo mkdir -p ./zbx_env/usr/lib/zabbix/alertscripts
 
@@ -152,9 +152,10 @@ sudo mkdir -p ./zbx_env/var/lib/zabbix/snmptraps
 
 #Phân quyền chặt chẽ (Tránh lỗi Permission Denied khi Docker mount)
 
-sudo chown -R 999:999 ./zbx_env/var/lib/postgresql
+
 
 sudo chown -R 1997:1997 ./zbx_env/usr/lib/zabbix
+
 
 #Tạo file môi trường để ẩn credentials:
 
