@@ -268,3 +268,24 @@ sudo docker compose up -d
 
 <img width="1104" height="172" alt="image" src="https://github.com/user-attachments/assets/af05d78f-44b0-4a5a-98cd-fa9491a0a5cd" />
 
+
+Bước 5: Truy cập và dọn dẹp. Mở trình duyệt truy cập: http://<IP_SERVER>
+
+Tài khoản mặc định siêu quan trọng cần đổi ngay:
+
+
+Username: Admin (Chữ A viết hoa)
+
+
+Password: zabbix
+
+#Cần lưu ý 3 điểm sau để hệ thống sống sót qua nhiều năm:
+
+
+Vỡ file log Docker: Mặc định Docker lưu log không giới hạn. Trong cấu hình ở bài trước, tôi đã nhắc bạn set "log-opts": {"max-size": "50m"} trong daemon.json. Nếu chưa làm, hệ thống sớm muộn cũng sẽ Disk Full.
+
+
+Housekeeping Database: Zabbix sinh ra một lượng dữ liệu Time-series khổng lồ. Hãy vào Administration -> General -> Housekeeping trên giao diện Web, cấu hình xóa dữ liệu History (Trend) cũ đi (ví dụ: giữ History 30 ngày, Trend 365 ngày). Nếu để mặc định, PostgreSQL sẽ phình to chiếm hết ổ cứng.
+
+
+Lỗi Ping (ICMP) báo giả: Trong file compose trên, tôi đã thêm cap_add: - NET_RAW. Thiếu dòng này, Docker sẽ block gói tin ICMP, khiến Zabbix báo toàn bộ thiết bị mạng bị "DOWN" dù chúng vẫn sống. Bạn không cần lo lỗi này nữa.
