@@ -175,7 +175,7 @@ services:
       - zabbix-net
 
   zabbix-server:
-    image: zabbix/zabbix-server-pgsql:alpine-7.0-latest
+    image: zabbix/zabbix-server-pgsql:alpine-7.4-latest
     container_name: zabbix-server
     restart: always
     ports:
