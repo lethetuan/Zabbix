@@ -263,10 +263,12 @@ sudo docker compose up -d
 Lần đầu tiên chạy, Zabbix Server sẽ tự động bung cấu trúc bảng (schema) vào database PostgreSQL trắng. Quá trình này mất khoảng 30 giây đến 1 phút tùy tốc độ ổ cứng. Hãy soi log để chắc chắn không có lỗi SQL nào xảy ra:
 ```bash
 sudo docker logs -f zabbix-server
+sudo docker logs --tail 100 zabbix-postgres
 ```
 Kiểm tra trạng thái container:
 ```bash
 sudo docker compose ps
+sudo docker ps
 ```
 
 ### Bước 5: Truy cập và Cấu hình
