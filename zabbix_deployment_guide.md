@@ -173,6 +173,13 @@ services:
       - zabbix-postgres-data:/var/lib/postgresql/data
     networks:
       - zabbix-net
+    # Healthcheck đảm bảo DB sẵn sàng trước khi Zabbix Server kết nối
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   zabbix-server:
     image: zabbix/zabbix-server-pgsql:alpine-7.4-latest
@@ -197,12 +204,13 @@ services:
       - NET_RAW
       - NET_ADMIN
     depends_on:
-      - postgres-server
+      postgres-server:
+        condition: service_healthy # Chỉ chạy khi Postgres đã pass healthcheck
     networks:
       - zabbix-net
 
   zabbix-web:
-    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest
     container_name: zabbix-web
     restart: always
     ports:
@@ -216,7 +224,10 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - PHP_TZ=${TIMEZONE}
     depends_on:
-      - zabbix-server
+      postgres-server:
+        condition: service_healthy # Web cũng cần chờ DB sẵn sàng
+      zabbix-server:
+        condition: service_started
     networks:
       - zabbix-net
 
