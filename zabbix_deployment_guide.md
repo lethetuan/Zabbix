@@ -135,6 +135,7 @@ Dán Nội dung file `.env`:
 POSTGRES_USER=zabbix
 POSTGRES_PASSWORD=MatKhauSieuKho123!@#
 POSTGRES_DB=zabbix
+```
 
 # File /opt/zabbix/.env chứa các thông tin cực kỳ nhạy cảm là tài khoản và mật khẩu Database → Nên chuyển quyền root và bảo mật bằng 2 dòng lệnh dưới:
 ```bash
@@ -164,7 +165,7 @@ services:
   postgres-server:
     image: postgres:16-alpine
     container_name: zabbix-postgres
-    restart: always
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -182,9 +183,9 @@ services:
       start_period: 10s
 
   zabbix-server:
-    image: zabbix/zabbix-server-pgsql:alpine-7.4-latest
+    image: zabbix/zabbix-server-pgsql:alpine-7.4.4
     container_name: zabbix-server
-    restart: always
+    restart: unless-stopped
     ports:
       - "10051:10051"
     environment:
@@ -199,10 +200,8 @@ services:
     volumes:
       - ./zbx_env/usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts:ro
       - ./zbx_env/usr/lib/zabbix/externalscripts:/usr/lib/zabbix/externalscripts:ro
-      - ./zbx_env/var/lib/zabbix/snmptraps:/var/lib/zabbix/snmptraps:ro
     cap_add:
       - NET_RAW
-      - NET_ADMIN
     depends_on:
       postgres-server:
         condition: service_healthy # Chỉ chạy khi Postgres đã pass healthcheck
@@ -210,9 +209,9 @@ services:
       - zabbix-net
 
   zabbix-web:
-    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.4.4
     container_name: zabbix-web
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:8080"
       - "443:8443"
@@ -278,4 +277,4 @@ Tài khoản mặc định siêu quan trọng cần đổi ngay:
    Zabbix sinh ra một lượng dữ liệu Time-series khổng lồ. Hãy vào **Administration -> General -> Housekeeping** trên giao diện Web, cấu hình xóa dữ liệu History (Trend) cũ đi (ví dụ: giữ History 30 ngày, Trend 365 ngày). Nếu để mặc định, PostgreSQL sẽ phình to chiếm hết ổ cứng.
 
 3. **Lỗi Ping (ICMP) báo giả:**
-   Trong file compose trên, cấu hình đã thêm `cap_add: - NET_RAW`. Thiếu dòng này, Docker sẽ block gói tin ICMP, khiến Zabbix báo toàn bộ thiết bị mạng bị "DOWN" dù chúng vẫn sống. Với cấu hình này, bạn không cần lo lỗi này nữa.
+   Trong file compose trên, cấu hình đã thêm `cap_add: - NET_RAW`. Trong một số môi trường Docker, tiện ích fping của Zabbix có thể không đủ quyền tạo raw socket ICMP và phát sinh lỗi Operation not permitted. Khi đó cần cấp capability NET_RAW.
