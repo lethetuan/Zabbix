@@ -151,10 +151,6 @@ sudo chown root:root /opt/zabbix/.env
 ls -l /opt/zabbix/.env
 ```
 
-
-# System settings
-TIMEZONE=Asia/Ho_Chi_Minh
-```
 *(Sau đó lưu lại file bằng phím tắt `Ctrl + O` -> Nhấn `Enter` -> `Ctrl + X` để thoát)*
 
 ### Bước 3: Triển khai file Docker Compose "Chống Đạn" (Bulletproof)
