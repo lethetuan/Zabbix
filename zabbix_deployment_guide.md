@@ -183,7 +183,7 @@ services:
       start_period: 10s
 
   zabbix-server:
-    image: zabbix/zabbix-server-pgsql:alpine-7.4.4
+    image: zabbix/zabbix-server-pgsql:alpine-7.0-latest
     container_name: zabbix-server
     restart: unless-stopped
     ports:
@@ -209,7 +209,7 @@ services:
       - zabbix-net
 
   zabbix-web:
-    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.4.4
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
     container_name: zabbix-web
     restart: unless-stopped
     ports:
@@ -242,8 +242,11 @@ volumes:
 ```
 #cần xác nhận version 7.4.4 tồn tại trên registry. Nếu pull thành công → OK. 
 ```bash
-sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.4.4
-sudo docker pull zabbix/zabbix-web-nginx-pgsql:alpine-7.4.4
+# 1. Kiểm tra image Zabbix Server
+sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.0.29
+
+# 2. Kiểm tra image Zabbix Web
+sudo docker pull zabbix/zabbix-web-nginx-pgsql:alpine-7.0.29
 ```
 ### Bước 4: Triển khai và Kiểm tra sự cố
 Chạy Docker Compose:
