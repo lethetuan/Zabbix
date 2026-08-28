@@ -139,6 +139,7 @@ POSTGRES_DB=zabbix
 # System settings
 TIMEZONE=Asia/Ho_Chi_Minh
 ```
+*(Sau đó lưu lại file bằng phím tắt `Ctrl + O` -> Nhấn `Enter` -> `Ctrl + X` để thoát)*
 #Sau khi thoát nano, mới chạy:
 # File /opt/zabbix/.env chứa các thông tin cực kỳ nhạy cảm là tài khoản và mật khẩu Database → Nên chuyển quyền root và bảo mật bằng 2 dòng lệnh dưới:
 ```bash
@@ -151,7 +152,7 @@ sudo chown root:root /opt/zabbix/.env
 ls -l /opt/zabbix/.env
 ```
 
-*(Sau đó lưu lại file bằng phím tắt `Ctrl + O` -> Nhấn `Enter` -> `Ctrl + X` để thoát)*
+
 
 ### Bước 3: Triển khai file Docker Compose "Chống Đạn" (Bulletproof)
 Tạo file triển khai:
@@ -239,8 +240,7 @@ networks:
 volumes:
   zabbix-postgres-data:
 ```
-#cần xác nhận version 7.4.4 tồn tại trên registry. Nếu pull thành công → OK. Chạy lệnh cd /opt/zabbix
-sudo docker compose up -d
+#cần xác nhận version 7.4.4 tồn tại trên registry. Nếu pull thành công → OK. 
 ```bash
 sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.4.4
 sudo docker pull zabbix/zabbix-web-nginx-pgsql:alpine-7.4.4
