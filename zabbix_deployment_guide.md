@@ -240,13 +240,16 @@ networks:
 volumes:
   zabbix-postgres-data:
 ```
-#cần xác nhận version 7.4.4 tồn tại trên registry. Nếu pull thành công → OK. 
+#Kiểm tra image Zabbix 7.0 trên Docker Registry trước khi triển khai. Nếu pull thành công → OK. 
 ```bash
 # 1. Kiểm tra image Zabbix Server
-sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.0.29
+sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.0-latest
 
 # 2. Kiểm tra image Zabbix Web
-sudo docker pull zabbix/zabbix-web-nginx-pgsql:alpine-7.0.29
+sudo docker pull zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+
+# 3. Kiểm tra image PostgreSQL
+sudo docker pull postgres:16-alpine
 ```
 ### Bước 4: Triển khai và Kiểm tra sự cố
 Chạy Docker Compose:
