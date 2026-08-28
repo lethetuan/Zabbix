@@ -196,7 +196,6 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
-      # Named Volume: Giao phó cho Docker quản lý quyền (fix lỗi userns-remap)
       - zabbix-postgres-data:/var/lib/postgresql/data
     networks:
       - zabbix-net
@@ -217,7 +216,6 @@ services:
       - ZBX_STARTSNMPPOLLERS=10
       - ZBX_TIMEOUT=15
     volumes:
-      # Các thư mục này map dạng Read-Only (ro) nên không bị ảnh hưởng bởi lỗi phân quyền
       - ./zbx_env/usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts:ro
       - ./zbx_env/usr/lib/zabbix/externalscripts:/usr/lib/zabbix/externalscripts:ro
       - ./zbx_env/var/lib/zabbix/snmptraps:/var/lib/zabbix/snmptraps:ro
