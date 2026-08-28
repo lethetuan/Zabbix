@@ -68,7 +68,7 @@ Dán nội dung dưới vào file `daemon.json` và lưu lại:
 > - `"icc": false`: Ngăn chặn các container trong cùng default bridge network tự do nói chuyện với nhau. Phải link explicitly qua custom network.
 > - `"no-new-privileges": true`: Ngăn chặn tiến trình trong container tự ý leo thang đặc quyền (ví dụ dùng `su` hay `sudo`).
 > - `"log-opts"`: Ngăn tình trạng log của container phình to làm tràn ổ cứng (chỉ giữ tối đa 3 file, mỗi file 50MB).
-> - `"live-restore": true`: Nếu Docker daemon crash hoặc update, các container đang chạy sẽ KHÔNG bị chết theo.
+> - `"live-restore": true`: Cho phép container tiếp tục chạy khi Docker daemon tạm thời bị restart/mất kết nối, trong các điều kiện được Docker hỗ trợ
 > - `"userland-proxy": false`: Tắt proxy không cần thiết, giảm bề mặt tấn công. Sử dụng iptables thuần túy để route port.
 
 ### Bước 6: Khởi động lại và phân quyền
@@ -135,6 +135,18 @@ Dán Nội dung file `.env`:
 POSTGRES_USER=zabbix
 POSTGRES_PASSWORD=MatKhauSieuKho123!@#
 POSTGRES_DB=zabbix
+
+# File /opt/zabbix/.env chứa các thông tin cực kỳ nhạy cảm là tài khoản và mật khẩu Database → Nên chuyển quyền root và bảo mật bằng 2 dòng lệnh dưới:
+```bash
+sudo chmod 600 /opt/zabbix/.env
+sudo chown root:root /opt/zabbix/.env
+```
+
+# Sau khi chạy 2 lệnh trên cần kiểm tra lại bằng lệnh dưới để đảm bảo file có dạng -rw------- 1 root root ...
+```bash
+ls -l /opt/zabbix/.env
+```
+
 
 # System settings
 TIMEZONE=Asia/Ho_Chi_Minh
