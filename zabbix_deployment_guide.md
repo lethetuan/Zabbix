@@ -133,10 +133,13 @@ Dán Nội dung file `.env`:
 ```env
 # Database credentials
 POSTGRES_USER=zabbix
-POSTGRES_PASSWORD=MatKhauSieuKho123!@#
+POSTGRES_PASSWORD=THAY_BANG_MAT_KHAU_RAT_MANH
 POSTGRES_DB=zabbix
-```
 
+# System settings
+TIMEZONE=Asia/Ho_Chi_Minh
+```
+#Sau khi thoát nano, mới chạy:
 # File /opt/zabbix/.env chứa các thông tin cực kỳ nhạy cảm là tài khoản và mật khẩu Database → Nên chuyển quyền root và bảo mật bằng 2 dòng lệnh dưới:
 ```bash
 sudo chmod 600 /opt/zabbix/.env
@@ -240,7 +243,12 @@ networks:
 volumes:
   zabbix-postgres-data:
 ```
-
+#cần xác nhận version 7.4.4 tồn tại trên registry. Nếu pull thành công → OK. Chạy lệnh cd /opt/zabbix
+sudo docker compose up -d
+```bash
+sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.4.4
+sudo docker pull zabbix/zabbix-web-nginx-pgsql:alpine-7.4.4
+```
 ### Bước 4: Triển khai và Kiểm tra sự cố
 Chạy Docker Compose:
 ```bash
