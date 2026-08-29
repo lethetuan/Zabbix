@@ -124,7 +124,7 @@ Phân quyền chặt chẽ (Tránh lỗi *Permission Denied* khi Docker mount):
 ```bash
 sudo chown -R 1997:1997 ./zbx_env/usr/lib/zabbix
 ```
-Tạo file môi trường để ẩn credentials:
+Tạo file chứa biến môi trường để ẩn credentials, file này rất quan trọng sẽ chứa các thông tin nhạy cảm:
 ```bash
 sudo nano .env
 ```
@@ -146,7 +146,7 @@ sudo chmod 600 /opt/zabbix/.env
 sudo chown root:root /opt/zabbix/.env
 ```
 
-# Sau khi chạy 2 lệnh trên cần kiểm tra lại bằng lệnh dưới để đảm bảo file có dạng -rw------- 1 root root ...
+##Sau khi chạy 2 lệnh trên cần kiểm tra lại bằng lệnh dưới để đảm bảo file có dạng -rw------- 1 root root ...
 ```bash
 ls -l /opt/zabbix/.env
 ```
@@ -154,11 +154,11 @@ ls -l /opt/zabbix/.env
 
 
 ### Bước 3: Triển khai file Docker Compose "Chống Đạn" (Bulletproof)
-Tạo file triển khai:
+Tạo file docker-compose.yml triển khai:
 ```bash
 sudo nano docker-compose.yml
 ```
-Dán cấu hình kiến trúc sau vào file `docker-compose.yml`:
+Dán cấu hình kiến trúc với nội dung sau vào file `docker-compose.yml`:
 ```yaml
 services:
   postgres-server:
