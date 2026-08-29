@@ -166,6 +166,10 @@ services:
     image: postgres:16-alpine
     container_name: zabbix-postgres
     restart: unless-stopped
+	# CHÚ Ý: Service postgres-server không hề có mục ports. 
+    # Điều này có nghĩa là cổng 5432 của PostgreSQL chỉ được mở ngầm bên trong mạng ảo zabbix-net 
+    # để zabbix-server và zabbix-web kết nối vào. Từ bên ngoài (kể cả trên chính máy chủ Ubuntu), 
+    # không ai có thể can thiệp trực tiếp vào database.
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -186,8 +190,11 @@ services:
     image: zabbix/zabbix-server-pgsql:alpine-7.0-latest
     container_name: zabbix-server
     restart: unless-stopped
+	# chú ý: đổi lại ip đúng với ip thực tế của server
     ports:
-      - "10051:10051"
+      - "192.168.1.100:10051:10051"
+	#cấu hình có sử dụng các biến môi trường (ví dụ: ${POSTGRES_USER}, ${POSTGRES_PASSWORD}, ${TIMEZONE}), 
+	#bạn hãy chắc chắn rằng mình đã tạo một file tên là .env nằm cùng thư mục với file docker-compose.yml để khai báo các giá trị này.  
     environment:
       - DB_SERVER_HOST=postgres-server
       - POSTGRES_USER=${POSTGRES_USER}
@@ -212,9 +219,10 @@ services:
     image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
     container_name: zabbix-web
     restart: unless-stopped
+	# chú ý: đổi lại ip đúng với ip thực tế của server
     ports:
-      - "80:8080"
-      - "443:8443"
+      - "192.168.1.100:80:8080"
+      - "192.168.1.100:443:8443"
     environment:
       - ZBX_SERVER_HOST=zabbix-server
       - DB_SERVER_HOST=postgres-server
@@ -242,6 +250,9 @@ volumes:
 ```
 #Kéo image trước khi triển khai. Nếu pull thành công → OK chạy lệnh triển khai. 
 ```bash
+# 0. Trước khi kéo image hãy kiểm tra lại config
+sudo docker compose config
+
 # 1. Kéo image Zabbix Server
 sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.0-latest
 
