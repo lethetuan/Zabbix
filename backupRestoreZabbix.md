@@ -125,8 +125,17 @@ sudo nano /etc/fstab
 #(Tham số vers=3.0 để ép Ubuntu dùng chuẩn SMB phiên bản 3.0 an toàn và tương thích tốt nhất với Windows Server đời mới). Lưu file lại và chạy lệnh sau để kết nối ngay lập tức:
 
 ```bash
+sudo systemctl daemon-reload
 sudo mount -a
 ```
+#Để chắc chắn ổ đĩa Windows đã được kết nối thành công, bạn gõ lệnh kiểm tra nếu thấy có dòng chữ như hình là được.
+
+
+```bash
+df -h | grep windows_backup
+```
+<img width="752" height="42" alt="image" src="https://github.com/user-attachments/assets/18b85056-3475-4b0b-9c1c-8666f8efa041" />
+
 #Ghi nhớ 4 thông tin: IP của Windows Server (VD: 192.168.1.10), Tên Share (Zabbix_Backup), Tài khoản Windows, Mật khẩu Windows.
 
 #Lưu lại. Kết quả: Từ nay, sau khi tiến trình sao lưu lúc 2h sáng trên Ubuntu hoàn tất, file nén .tar.gz sẽ tự động "bay" thẳng sang ổ D:\Zabbix_Backup trên con Windows Server của bạn!
