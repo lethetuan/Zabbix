@@ -53,26 +53,28 @@ sudo nano /etc/netplan/50-cloud-init.yaml
 Thay đổi hoặc bổ sung cấu hình theo mẫu chuẩn sau. Chú ý sửa lại tên card mạng, IP, Subnet, Gateway và DNS cho phù hợp với hạ tầng mạng của bạn:
 
 ```yaml
+  GNU nano 8.7.1                                   00-installer-config.yaml
+# This is the network config written by 'subiquity'
 network:
-  version: 2
-  renderer: networkd
   ethernets:
-    ens33:                  # THAY BẰNG TÊN CARD MẠNG CỦA BẠN (Ví dụ: enp3s0)
-      dhcp4: no
+    ens33:
       addresses:
-        - 192.168.1.100/24  # IP tĩnh và Subnet Mask của bạn
-      routes:
-        - to: default
-          via: 192.168.1.1  # Địa chỉ Gateway của Router/Switch
+      - 10.1.1.30/24
+      dhcp6: false
+      match:
+        macaddress: 00:0c:29:98:84:94
       nameservers:
         addresses:
-          - 8.8.8.8         # DNS chính (Google)
-          - 1.1.1.1         # DNS dự phòng (Cloudflare)
+        - 10.1.1.2
+        search: []
+      routes:
+      - to: default
+        via: 10.1.1.2
+      set-name: ens33
+  version: 2
 ```
 
 **Lưu ý kỹ thuật:**
-* `renderer: networkd`: Bắt buộc để systemd-networkd quản lý mạng.
-* `dhcp4: no`: Tắt nhận IP tự động.
 * Cấu trúc `routes` thay thế cho cú pháp `gateway4` cũ (vốn đã bị deprecated từ các bản Netplan gần đây).
 
 Lưu file lại: Nhấn `Ctrl + O`, sau đó `Enter` để ghi, và `Ctrl + X` để thoát.
