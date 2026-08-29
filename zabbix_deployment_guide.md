@@ -119,7 +119,6 @@ Tạo các thư mục persistent data:
 ```bash
 sudo mkdir -p ./zbx_env/usr/lib/zabbix/alertscripts
 sudo mkdir -p ./zbx_env/usr/lib/zabbix/externalscripts
-sudo mkdir -p ./zbx_env/var/lib/zabbix/snmptraps
 ```
 Phân quyền chặt chẽ (Tránh lỗi *Permission Denied* khi Docker mount):
 ```bash
@@ -174,6 +173,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - TZ=${TIMEZONE}
     volumes:
       - zabbix-postgres-data:/var/lib/postgresql/data
     networks:
@@ -200,6 +200,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - TZ=${TIMEZONE}
       - ZBX_CACHESIZE=256M
       - ZBX_STARTPINGERS=10
       - ZBX_STARTSNMPPOLLERS=10
@@ -230,6 +231,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - PHP_TZ=${TIMEZONE}
+      - TZ=${TIMEZONE}
     depends_on:
       postgres-server:
         condition: service_healthy # Web cũng cần chờ DB sẵn sàng
