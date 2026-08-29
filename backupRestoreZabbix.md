@@ -193,6 +193,9 @@ sudo docker compose up -d postgres-server
 ```bash
 cat /tmp/zabbix_db_xxxx.dump | sudo docker exec -i zabbix-postgres pg_restore -U zabbix -d zabbix --clean --if-exists
 ```
+<img width="1549" height="535" alt="image" src="https://github.com/user-attachments/assets/2983837b-2c19-43e3-bab8-4d93f8096b44" />
+
+
 #Thời gian chạy tuỳ thuộc vào dung lượng database cũ.
 #Bước 5: Chỉnh sửa IP và Khởi động phần còn lại, Nếu Server mới có địa chỉ IP LAN khác máy cũ, hãy cập nhật lại, (Sửa các dòng mapping ports thành IP mới, ví dụ: - "IP_MOI:10051:10051").
 ```bash
