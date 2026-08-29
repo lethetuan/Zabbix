@@ -190,7 +190,7 @@ services:
     image: zabbix/zabbix-server-pgsql:alpine-7.0.30
     container_name: zabbix-server
     restart: unless-stopped
-	# chú ý: đổi lại ip đúng với ip thực tế của server
+# chú ý: đổi lại ip đúng với ip thực tế của server
     ports:
       - "192.168.1.100:10051:10051"
 #cấu hình có sử dụng các biến môi trường (ví dụ: ${POSTGRES_USER}, ${POSTGRES_PASSWORD}, ${TIMEZONE}), 
