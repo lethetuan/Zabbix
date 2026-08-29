@@ -299,7 +299,7 @@ Tài khoản mặc định siêu quan trọng cần đổi ngay:
    Mặc định Docker lưu log không giới hạn. Trong cấu hình ở bài trước, bạn đã set `"log-opts": {"max-size": "50m"}` trong `daemon.json`. Nếu chưa làm, hệ thống sớm muộn cũng sẽ Disk Full.
 
 2. **Housekeeping Database:**
-   Zabbix sinh ra một lượng dữ liệu Time-series khổng lồ. Hãy vào **Administration -> General -> Housekeeping** trên giao diện Web, cấu hình xóa dữ liệu History (Trend) cũ đi (ví dụ: giữ History 30 ngày, Trend 365 ngày). Nếu để mặc định, PostgreSQL sẽ phình to chiếm hết ổ cứng.
+   Zabbix sinh ra một lượng dữ liệu Time-series khổng lồ. Khi vào giao diện Web hãy truy cập **Administration -> General -> Housekeeping** trên giao diện Web, cấu hình xóa dữ liệu History (Trend) cũ đi (ví dụ: giữ History 30 ngày, Trend 365 ngày). Nếu để mặc định, PostgreSQL sẽ phình to chiếm hết ổ cứng. --> Hệ thống sập
 
 3. **Lỗi Ping (ICMP) báo giả:**
    Trong file compose trên, cấu hình đã thêm `cap_add: - NET_RAW`. Trong một số môi trường Docker, tiện ích fping của Zabbix có thể không đủ quyền tạo raw socket ICMP và phát sinh lỗi Operation not permitted. Khi đó cần cấp capability NET_RAW.
