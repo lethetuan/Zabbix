@@ -165,10 +165,10 @@ services:
     image: postgres:16-alpine
     container_name: zabbix-postgres
     restart: unless-stopped
-	# CHÚ Ý: Service postgres-server không hề có mục ports. 
-    # Điều này có nghĩa là cổng 5432 của PostgreSQL chỉ được mở ngầm bên trong mạng ảo zabbix-net 
-    # để zabbix-server và zabbix-web kết nối vào. Từ bên ngoài (kể cả trên chính máy chủ Ubuntu), 
-    # không ai có thể can thiệp trực tiếp vào database.
+# CHÚ Ý: Service postgres-server không hề có mục ports. 
+# Điều này có nghĩa là cổng 5432 của PostgreSQL chỉ được mở ngầm bên trong mạng ảo zabbix-net 
+# để zabbix-server và zabbix-web kết nối vào. Từ bên ngoài (kể cả trên chính máy chủ Ubuntu), 
+# không ai có thể can thiệp trực tiếp vào database.
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -178,7 +178,7 @@ services:
       - zabbix-postgres-data:/var/lib/postgresql/data
     networks:
       - zabbix-net
-    # Healthcheck đảm bảo DB sẵn sàng trước khi Zabbix Server kết nối
+# Healthcheck đảm bảo DB sẵn sàng trước khi Zabbix Server kết nối
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -193,8 +193,8 @@ services:
 	# chú ý: đổi lại ip đúng với ip thực tế của server
     ports:
       - "192.168.1.100:10051:10051"
-	#cấu hình có sử dụng các biến môi trường (ví dụ: ${POSTGRES_USER}, ${POSTGRES_PASSWORD}, ${TIMEZONE}), 
-	#bạn hãy chắc chắn rằng mình đã tạo một file tên là .env nằm cùng thư mục với file docker-compose.yml để khai báo các giá trị này.  
+#cấu hình có sử dụng các biến môi trường (ví dụ: ${POSTGRES_USER}, ${POSTGRES_PASSWORD}, ${TIMEZONE}), 
+#bạn hãy chắc chắn rằng mình đã tạo một file tên là .env nằm cùng thư mục với file docker-compose.yml để khai báo các giá trị này.  
     environment:
       - DB_SERVER_HOST=postgres-server
       - POSTGRES_USER=${POSTGRES_USER}
