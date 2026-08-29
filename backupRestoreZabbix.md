@@ -151,6 +151,17 @@ df -h | grep windows_backup
 #Cài đặt Docker, Docker Compose, cấu hình bảo mật Docker (daemon.json) và cài đặt Timezone hệ thống giống với máy chủ cũ. https://github.com/lethetuan/Zabbix/blob/main/zabbix_deployment_guide.md
 
 #Bước 2: Phục hồi cấu hình Zabbix. Đưa file ZABBIX_FULL_BACKUP_xxxx.tar.gz (lấy từ NAS/Cloud) vào thư mục /tmp trên server mới.
+#Chuẩn bị: Trên máy tính Windows (hoặc ngay trên con Windows Server đang chứa file backup), hãy tải phần mềm WinSCP (miễn phí).
+Mở WinSCP lên --> Nhập IP của con Ubuntu Server mới --> Nhập Username và Password của Ubuntu Server mới rồi bấm Login.
+
+#Kéo thả file:
+
+#Cửa sổ bên Trái của WinSCP là máy Windows Server -> Bạn duyệt tìm đến thư mục D:\Zabbix_Backup và chọn đúng file .tar.gz mới nhất.
+
+#Cửa sổ bên Phải là máy Ubuntu -> Bạn nháy đúp chuột vào mục <root> rồi tìm đến thư mục /tmp.
+
+#Cầm file bên trái kéo thả sang bên phải. Chờ thanh tiến trình chạy xong là file đã nằm an toàn trong /tmp của Ubuntu.Tắt WinSCP và tiếp tục gõ lệnh dưới
+
 ```bash
 cd /tmp
 #Giải nén file tổng
