@@ -52,16 +52,19 @@ tar -czvf $BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz -C $BACKUP_DIR zabbix_db_$
 # 6. Xóa các file trung gian
 rm -f $BACKUP_DIR/zabbix_db_$DATE.dump $BACKUP_DIR/zabbix_config_$DATE.tar.gz
 
-# 7. Xóa backup cũ
+# 7. Xóa backup cũ trên máy Local (Ubuntu)
 find $BACKUP_DIR -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
 
+# Đồng bộ sang thư mục Share trên Windows Server
+if mountpoint -q /mnt/windows_backup; then
+    echo "Đang copy sang thư mục Share trên Windows Server..."
+    cp $BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz /mnt/windows_backup/
+    find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 -exec rm -f {} \;
+else
+    echo "CẢNH BÁO: Ổ mạng Windows Server chưa được kết nối hoặc có lỗi kết nối! Bỏ qua bước copy."
+fi
+
 echo "=== Backup Hoàn Tất ==="
-
-echo "Đang copy sang thư mục Share trên Windows Server..."
-cp $BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz /mnt/windows_backup/
-
-# Tùy chọn: Tự động xóa các file backup CŨ HƠN 14 ngày trên Windows Server để đỡ đầy ổ
-find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 -exec rm -f {} \;
 ```
 
 **Bước 3: Phân quyền và đặt lịch chạy tự động**
