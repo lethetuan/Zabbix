@@ -45,6 +45,9 @@ Sau khi khởi động lại chúng ta sẽ tiến hành đăng nhập tài kho�
 
 <img width="949" height="349" alt="image" src="https://github.com/user-attachments/assets/f0dabec0-17c3-4b11-b329-af706f3cd1bc" />
 
+<img width="1117" height="637" alt="image" src="https://github.com/user-attachments/assets/5adc9eb9-3a1d-406f-8923-2bbe5ddf0842" />
+
+
 
 
 
