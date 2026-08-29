@@ -1,4 +1,7 @@
-# Cài đặt Server cơ bản ban đầu.
+# Cài đặt hệ điều hành Ubuntu Server.
+https://github.com/lethetuan/Zabbix/blob/main/installUbuntuServer.md
+
+# Cài đặt thông số Server cơ bản ban đầu.
 https://github.com/lethetuan/Zabbix/blob/main/setupserverubuntu.md
 
 # Quy trình triển khai Zabbix chi tiết
