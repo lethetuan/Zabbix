@@ -148,7 +148,7 @@ df -h | grep windows_backup
 
 #Bước 1: Chuẩn bị Server mới và cài đặt hệ điều hành Ubuntu Server mới.
 
-#Cài đặt địa chỉ IP tĩnh, SSH, Docker, Docker Compose, cấu hình bảo mật Docker (daemon.json) và cài đặt Timezone hệ thống giống với máy chủ cũ. Chi tiết cách cài vào link https://github.com/lethetuan/Zabbix/blob/main/zabbix_deployment_guide.md
+#Cài đặt địa chỉ IP tĩnh, SSH, Docker, Docker Compose, cấu hình bảo mật Docker (daemon.json) và cài đặt Timezone hệ thống giống với máy chủ cũ. Chi tiết 7 bước cài đặt vào link này: https://github.com/lethetuan/Zabbix/blob/main/zabbix_deployment_guide.md
 
 #Bước 2: Phục hồi cấu hình Zabbix. Đưa file ZABBIX_FULL_BACKUP_xxxx.tar.gz (lấy từ NAS/Cloud) vào thư mục /tmp trên server mới.
 
