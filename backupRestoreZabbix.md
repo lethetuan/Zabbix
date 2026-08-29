@@ -56,3 +56,42 @@ sudo crontab -e
 0 2 * * * /opt/zabbix_backup.sh >> /var/log/zabbix_backup.log 2>&1
 ```
 # Kịch Bản Disaster Recovery (Backup & Restore) Zabbix Server
+
+#Bước 1: Chuẩn bị Server mới và cài đặt hệ điều hành Ubuntu Server mới.
+
+#Cài đặt Docker, Docker Compose, cấu hình bảo mật Docker (daemon.json) và cài đặt Timezone hệ thống giống với máy chủ cũ. https://github.com/lethetuan/Zabbix/blob/main/zabbix_deployment_guide.md
+
+#Bước 2: Phục hồi cấu hình Zabbix. Đưa file ZABBIX_FULL_BACKUP_xxxx.tar.gz (lấy từ NAS/Cloud) vào thư mục /tmp trên server mới.
+```bash
+cd /tmp
+#Giải nén file tổng
+tar -xzvf ZABBIX_FULL_BACKUP_xxxx.tar.gz
+
+#Giải nén thư mục cấu hình về đúng vị trí cũ (/opt/zabbix)
+sudo tar -xzvf zabbix_config_xxxx.tar.gz -C /opt
+```
+
+#Lệnh này sẽ khôi phục lại toàn bộ file docker-compose.yml, file ẩn .env và các thư mục script tuỳ chỉnh với đúng phân quyền cũ.
+
+#Bước 3: Bật riêng Database (CHƯA bật toàn bộ hệ thống) ⚠️ KHÔNG chạy lệnh docker compose up -d lúc này để tránh Zabbix Server tự tạo bảng trắng đè lên DB cũ.
+```bash
+cd /opt/zabbix
+sudo docker compose up -d postgres-server
+```
+#Chờ khoảng 15-20 giây để container PostgreSQL khởi tạo xong.
+
+#Bước 4: Đưa dữ liệu (Restore) vào Database. Dùng file .dump đã giải nén ở /tmp để khôi phục cấu trúc và dữ liệu:
+```bash
+cat /tmp/zabbix_db_xxxx.dump | sudo docker exec -i zabbix-postgres pg_restore -U zabbix -d zabbix --clean --if-exists
+```
+#Thời gian chạy tuỳ thuộc vào dung lượng database cũ.
+#Bước 5: Chỉnh sửa IP và Khởi động phần còn lại, Nếu Server mới có địa chỉ IP LAN khác máy cũ, hãy cập nhật lại, (Sửa các dòng mapping ports thành IP mới, ví dụ: - "IP_MOI:10051:10051").
+```bash
+sudo nano /opt/zabbix/docker-compose.yml
+```
+#Khởi động toàn bộ hệ thống:
+```bash
+cd /opt/zabbix
+sudo docker compose up -d
+```
+#Hệ thống của bạn lúc này đã được phục hồi hoàn chỉnh cùng với mọi cài đặt, host và lịch sử giám sát cũ!
