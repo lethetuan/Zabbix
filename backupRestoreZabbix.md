@@ -75,7 +75,10 @@ sudo crontab -e
 ```bash
 0 2 * * * /opt/zabbix_backup.sh >> /var/log/zabbix_backup.log 2>&1
 ```
-
+#Lệnh kiểm tra cronjob tự động backup chạy vào 2h sáng mỗi ngày!
+```bash
+sudo crontab -l
+```
 **Bước 4: Tạo và share thư mục lưu file backup trên Window server**
 
 #1. Chuẩn bị trên Windows Server
