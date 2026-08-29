@@ -158,6 +158,9 @@ df -h | grep windows_backup
 
 #Cửa sổ bên Phải là máy server Ubuntu -> Bạn nháy đúp chuột vào mục <root> rồi tìm đến thư mục /tmp.
 
+
+<img width="1351" height="689" alt="image" src="https://github.com/user-attachments/assets/9acbe8d5-6627-48c9-b97f-62804cf32a23" />
+
 #Cầm file bên trái kéo thả sang bên phải. Chờ thanh tiến trình chạy xong là file đã nằm an toàn trong /tmp của Ubuntu.Tắt WinSCP và tiếp tục gõ lệnh dưới
 
 ```bash
