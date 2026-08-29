@@ -206,4 +206,8 @@ sudo nano /opt/zabbix/docker-compose.yml
 cd /opt/zabbix
 sudo docker compose up -d
 ```
+
+<img width="1437" height="281" alt="image" src="https://github.com/user-attachments/assets/a617dff4-b26e-41cd-858d-77b20f30bd92" />
+
+
 #Hệ thống của bạn lúc này đã được phục hồi hoàn chỉnh cùng với mọi cài đặt, host và lịch sử giám sát cũ!
