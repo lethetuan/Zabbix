@@ -41,6 +41,11 @@
 
 <img width="1039" height="777" alt="image" src="https://github.com/user-attachments/assets/36aeebae-d798-4935-b7b8-90c1a9ba3293" />
 
+Sau khi khởi động lại chúng ta sẽ tiến hành đăng nhập tài khoản vào Server
+
+<img width="949" height="349" alt="image" src="https://github.com/user-attachments/assets/f0dabec0-17c3-4b11-b329-af706f3cd1bc" />
+
+
 
 
 
