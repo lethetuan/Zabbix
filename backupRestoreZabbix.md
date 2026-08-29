@@ -70,7 +70,7 @@ find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 
 sudo chmod +x /opt/zabbix_backup.sh
 sudo crontab -e
 ```
-# Thêm dòng sau vào file crontab:
+# Thêm dòng sau vào file crontab để tự động 02:00 sẽ server chạy backup
 
 ```bash
 0 2 * * * /opt/zabbix_backup.sh >> /var/log/zabbix_backup.log 2>&1
