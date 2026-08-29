@@ -1,4 +1,5 @@
-# Cẩm nang Quản trị Hệ thống: Cấu hình IP Tĩnh trên Ubuntu Server từ A-Z 
+# Cẩm nang Quản trị Hệ thống Linux: 
+# Phần 1: Cấu hình IP Tĩnh trên Ubuntu Server từ A-Z 
 
 Việc gán IP tĩnh là bước chân đầu tiên và quan trọng nhất khi dựng một máy chủ. Trên Ubuntu Server hiện đại (từ 18.04 trở đi), công cụ chính thống được Google/Canonical áp dụng là **Netplan**.
 
