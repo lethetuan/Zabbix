@@ -1,6 +1,7 @@
 # Kịch Bản Disaster Recovery (Backup & Restore) Zabbix Server
 
-Tài liệu này hướng dẫn cách sao lưu hệ thống Zabbix (chạy trên Docker Compose + PostgreSQL) và khôi phục nhanh chóng sang một máy chủ mới trong trường hợp máy chủ cũ gặp sự cố nghiêm trọng.
+Tài liệu này hướng dẫn cách sao lưu hệ thống Zabbix (chạy trên Docker Compose + PostgreSQL) và 
+khôi phục nhanh chóng sang một máy chủ mới trong trường hợp máy chủ cũ gặp sự cố nghiêm trọng kể các trường hợp cháy luôn server vật lý.
 
 ---
 
