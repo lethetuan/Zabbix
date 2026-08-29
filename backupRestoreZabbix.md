@@ -68,17 +68,22 @@ cd /tmp
 tar -xzvf ZABBIX_FULL_BACKUP_xxxx.tar.gz
 
 #Giải nén thư mục cấu hình về đúng vị trí cũ (/opt/zabbix)
-sudo tar -xzvf zabbix_config_xxxx.tar.gz -C /opt
+sudo tar -xzvpf zabbix_config_xxxx.tar.gz -C /opt
+
+
+
+
 ```
 
 #Lệnh này sẽ khôi phục lại toàn bộ file docker-compose.yml, file ẩn .env và các thư mục script tuỳ chỉnh với đúng phân quyền cũ.
 
 #Bước 3: Bật riêng Database (CHƯA bật toàn bộ hệ thống) ⚠️ KHÔNG chạy lệnh docker compose up -d lúc này để tránh Zabbix Server tự tạo bảng trắng đè lên DB cũ.
+
 ```bash
 cd /opt/zabbix
 sudo docker compose up -d postgres-server
 ```
-#Chờ khoảng 15-20 giây để container PostgreSQL khởi tạo xong.
+#Chờ khoảng 15-20 giây để container PostgreSQL khởi tạo xong, nạp dữ liệu xong xuôi, rồi mới được bật các dịch vụ còn lại..
 
 #Bước 4: Đưa dữ liệu (Restore) vào Database. Dùng file .dump đã giải nén ở /tmp để khôi phục cấu trúc và dữ liệu:
 ```bash
