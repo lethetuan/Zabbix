@@ -1,8 +1,8 @@
-# Chi tiết các bước triển khai Zabbix
+# Tài liệu hướng dẫn chi tiết các bước triển khai Zabbix qua Docker
 
 ## 1. Cài đặt Docker và các thành phần cốt lõi
 
-### Bước 1: Cập nhật index các gói phần mềm
+### Bước 1: Cập nhật index các gói phần mềm của hệ thống Server
 ```bash
 sudo apt update && sudo apt upgrade -y
 ```
