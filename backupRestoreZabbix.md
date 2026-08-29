@@ -17,6 +17,7 @@ sudo nano /opt/zabbix_backup.sh
 ```bash
 #!/bin/bash
 BACKUP_DIR="/backup/zabbix"
+mkdir -p $BACKUP_DIR    # <--- Thêm dòng này để tự động tạo thư mục nếu nó bị xóa mất
 DATE=$(date +"%Y%m%d_%H%M")
 ZABBIX_DIR="/opt/zabbix"
 
@@ -73,7 +74,7 @@ echo "=== Backup Hoàn Tất ==="
 sudo chmod +x /opt/zabbix_backup.sh
 sudo crontab -e
 ```
-# Thêm dòng sau vào file crontab để tự động 02:00 sẽ server chạy backup
+# Thêm dòng sau vào file crontab để lúc 02:00 sáng server sẽ tự động chạy backup
 
 ```bash
 0 2 * * * /opt/zabbix_backup.sh >> /var/log/zabbix_backup.log 2>&1
