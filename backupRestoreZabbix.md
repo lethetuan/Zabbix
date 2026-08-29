@@ -78,10 +78,15 @@ sudo crontab -e
 
 **Bước 4: Tạo và share thư mục lưu file backup trên Window server**
 #1. Chuẩn bị trên Windows Server
+
 #Tạo một thư mục trên Windows Server (Ví dụ: D:\Zabbix_Backup).
+
 #Click chuột phải vào thư mục -> Properties -> Tab Sharing -> Advanced Sharing.
+
 #Tích chọn Share this folder. Chú ý tên ở ô Share name (ví dụ mặc định là Zabbix_Backup).
+
 #Bấm nút Permissions, cấp quyền Full Control cho tài khoản Windows mà bạn định dùng.
+
 
 #2. Cài đặt công cụ và tạo thư mục ảo trên Ubuntu Server
 ```bash
