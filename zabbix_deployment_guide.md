@@ -220,7 +220,7 @@ services:
     image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0.30
     container_name: zabbix-web
     restart: unless-stopped
-	# chú ý: đổi lại ip đúng với ip thực tế của server
+# chú ý: đổi lại ip đúng với ip thực tế của server
     ports:
       - "192.168.1.100:80:8080"
       - "192.168.1.100:443:8443"
