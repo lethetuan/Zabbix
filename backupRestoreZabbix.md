@@ -19,26 +19,40 @@ sudo nano /opt/zabbix_backup.sh
 BACKUP_DIR="/backup/zabbix"
 DATE=$(date +"%Y%m%d_%H%M")
 ZABBIX_DIR="/opt/zabbix"
-DB_CONTAINER="zabbix-postgres" 
-DB_USER="zabbix"               
-DB_NAME="zabbix"               
-KEEP_DAYS=7                    
+
+# 1. ĐỌC BIẾN TỪ FILE .ENV CỦA DỰ ÁN
+if [ -f "$ZABBIX_DIR/.env" ]; then
+    # Lệnh set -a giúp export tự động các biến trong .env ra môi trường
+    set -a
+    source "$ZABBIX_DIR/.env"
+    set +a
+else
+    echo "LỖI: Không tìm thấy file $ZABBIX_DIR/.env. Dừng backup!"
+    exit 1
+fi
+
+# 2. GÁN BIẾN (Lấy giá trị từ .env)
+DB_CONTAINER="zabbix-postgres" # Tên container vẫn cố định theo docker-compose
+DB_USER="$POSTGRES_USER"
+DB_NAME="$POSTGRES_DB"
+KEEP_DAYS=7
 
 echo "=== Bắt đầu Backup Zabbix ($DATE) ==="
+echo "Đang dùng Database: $DB_NAME | User: $DB_USER"
 
-# 1. Backup Database (Dùng pg_dump, không cần stop container)
-docker exec -t $DB_CONTAINER pg_dump -U $DB_USER -F c$DB_NAME > $BACKUP_DIR/zabbix_db_$DATE.dump
+# 3. Backup Database
+docker exec $DB_CONTAINER pg_dump -U $DB_USER --format=custom $DB_NAME > $BACKUP_DIR/zabbix_db_$DATE.dump
 
-# 2. Backup thư mục cấu hình (Bao gồm docker-compose.yml, .env, zbx_env)
+# 4. Backup thư mục cấu hình 
 tar -czvf $BACKUP_DIR/zabbix_config_$DATE.tar.gz -C /opt zabbix
 
-# 3. Gom lại thành 1 file duy nhất để dễ quản lý
-tar -czvf $BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz -C$BACKUP_DIR zabbix_db_$DATE.dump zabbix_config_$DATE.tar.gz
+# 5. Gom lại thành 1 file duy nhất
+tar -czvf $BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz -C $BACKUP_DIR zabbix_db_$DATE.dump zabbix_config_$DATE.tar.gz
 
-# 4. Xóa các file trung gian
+# 6. Xóa các file trung gian
 rm -f $BACKUP_DIR/zabbix_db_$DATE.dump $BACKUP_DIR/zabbix_config_$DATE.tar.gz
 
-# 5. Xóa các bản backup cũ hơn KEEP_DAYS
+# 7. Xóa backup cũ
 find $BACKUP_DIR -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
 
 echo "=== Backup Hoàn Tất ==="
