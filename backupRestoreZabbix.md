@@ -77,6 +77,7 @@ sudo crontab -e
 ```
 
 **Bước 4: Tạo và share thư mục lưu file backup trên Window server**
+
 #1. Chuẩn bị trên Windows Server
 
 #Tạo một thư mục trên Windows Server (Ví dụ: D:\Zabbix_Backup).
