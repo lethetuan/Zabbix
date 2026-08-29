@@ -110,3 +110,106 @@ ping -c 4 google.com
 
 ---
 *Chúc hệ thống của bạn luôn uptime 99.99%!*
+
+## Phần 2: Chi tiết cấu hình SSH trên Ubuntu Server
+
+### Bước 1: Cập nhật hệ thống
+Luôn đảm bảo hệ thống được cập nhật trước khi cài đặt phần mềm mới:
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+```
+
+### Bước 2: Cài đặt OpenSSH Server
+
+```bash
+sudo apt install openssh-server -y
+```
+
+### Bước 3: Kích hoạt SSH tự động khởi động cùng hệ thống
+
+```bash
+sudo systemctl enable --now ssh
+```
+
+Kiểm tra trạng thái SSH xem đã hoạt động (running) chưa:
+
+```bash
+sudo systemctl status ssh
+```
+
+![SSH Status](https://github.com/user-attachments/assets/01b9616c-1d23-4f2a-a4ef-8424708f01e8)
+
+### Bước 4: Cấu hình Tường lửa (UFW)
+Mở cổng trên Tường lửa (UFW) cho phép lưu lượng truy cập SSH qua cổng mặc định (cổng 22):
+
+```bash
+sudo ufw allow ssh
+sudo ufw enable
+```
+
+![UFW Config](https://github.com/user-attachments/assets/989e0911-bcc9-478f-a80c-56949a6a5694)
+
+### Bước 5: Tạo và sao chép SSH Key (Thực hiện trên máy tính Admin - Windows)
+
+**1. Tạo SSH Key trên máy tính Windows của Admin:**
+Mở Command Prompt (cmd) hoặc PowerShell và chạy lệnh:
+
+```bash
+ssh-keygen -t ed25519 -C "ten_may_tinh_cua_ban"
+```
+*(Ghi chú: `-C "ten_may_tinh_cua_ban"` chỉ để note lại tên máy tính giúp bạn dễ quản lý).*
+
+**2. Sao chép Public Key lên Server Linux:**
+Di chuyển đến thư mục chứa key:
+
+```cmd
+cd C:\Users\username\.ssh
+```
+*(Thay thế `username` bằng username máy tính của bạn).*
+
+Chạy lệnh sau để đẩy key lên server *(Khuyên dùng Command Prompt - cmd để tránh lỗi encoding của PowerShell)*:
+
+```cmd
+type id_ed25519.pub | ssh tuan@10.1.1.30 "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+```
+
+*Lưu ý: Nếu bạn sử dụng PowerShell, lệnh pipe `|` đôi khi sẽ đổi bảng mã sang UTF-16 gây lỗi định dạng key trên Linux. Hãy dùng **Command Prompt (cmd)** cho bước này để an toàn nhất, hoặc dùng lệnh `ssh-copy-id` nếu máy bạn có hỗ trợ.*
+
+**Minh họa lệnh dùng Command Prompt (cmd):**
+![CMD Push Key](https://github.com/user-attachments/assets/1afa38a1-0718-42ba-9a74-2386943e5d7c)
+
+**Minh họa lệnh dùng PowerShell:**
+![PowerShell Push Key](https://github.com/user-attachments/assets/9bf99a63-7ce6-4190-bf15-152fc3ec9001)
+
+![Key generation process](https://github.com/user-attachments/assets/20b354c0-ce4c-4a06-8af3-a4de525d47bd)
+
+### Bước 6: Đăng nhập SSH bằng Key
+Bây giờ bạn có thể đăng nhập vào server mà không cần nhập mật khẩu thông qua lệnh:
+
+```bash
+ssh username@dia_chi_ip_server
+```
+
+![SSH Login](https://github.com/user-attachments/assets/3ba4fa4d-03ab-4c9a-a6ef-2f9bd40b09c2)
+
+Lưu trữ lại key đăng nhập thành công:
+
+![SSH Key Saved](https://github.com/user-attachments/assets/b2cd2fe5-9e1b-42c7-ad8e-c1cda56baaf0)
+
+### Bước 7: (Tùy chọn/Nâng cao) Vô hiệu hóa đăng nhập bằng mật khẩu
+Sau khi bạn đã chắc chắn có thể đăng nhập thành công bằng SSH Key, bạn nên tắt tính năng đăng nhập bằng mật khẩu để ngăn chặn hoàn toàn các cuộc tấn công dò quét mật khẩu (brute-force):
+
+1. Mở file cấu hình sshd:
+   ```bash
+   sudo nano /etc/ssh/sshd_config
+   ```
+2. Tìm dòng `#PasswordAuthentication yes` hoặc `PasswordAuthentication yes` và sửa lại thành:
+   ```text
+   PasswordAuthentication no
+   ```
+3. Lưu file (`Ctrl + O`, `Enter`, `Ctrl + X`) và khởi động lại dịch vụ SSH:
+   ```bash
+   sudo systemctl restart ssh
+   ```
