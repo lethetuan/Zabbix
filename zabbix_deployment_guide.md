@@ -187,7 +187,7 @@ services:
       start_period: 10s
 
   zabbix-server:
-    image: zabbix/zabbix-server-pgsql:alpine-7.0-latest
+    image: zabbix/zabbix-server-pgsql:alpine-7.0.30
     container_name: zabbix-server
     restart: unless-stopped
 	# chú ý: đổi lại ip đúng với ip thực tế của server
@@ -217,7 +217,7 @@ services:
       - zabbix-net
 
   zabbix-web:
-    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0.30
     container_name: zabbix-web
     restart: unless-stopped
 	# chú ý: đổi lại ip đúng với ip thực tế của server
@@ -256,10 +256,10 @@ volumes:
 sudo docker compose config
 
 # 1. Kéo image Zabbix Server
-sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.0-latest
+sudo docker pull zabbix/zabbix-server-pgsql:alpine-7.0.30
 
 # 2. Kéo image Zabbix Web
-sudo docker pull zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+sudo docker pull zabbix/zabbix-web-nginx-pgsql:alpine-7.0.30
 
 # 3. Kéo image PostgreSQL
 sudo docker pull postgres:16-alpine
