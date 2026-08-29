@@ -181,7 +181,13 @@ sudo tar -xzvpf zabbix_config_xxxx.tar.gz -C /opt
 cd /opt/zabbix
 sudo docker compose up -d postgres-server
 ```
+
+<img width="1579" height="999" alt="image" src="https://github.com/user-attachments/assets/4fa16f4c-82d9-474c-96de-fd04fc96599f" />
+
 #Chờ khoảng 15-20 giây để container PostgreSQL khởi tạo xong, nạp dữ liệu xong xuôi, rồi mới được bật các dịch vụ còn lại..
+
+<img width="1045" height="120" alt="image" src="https://github.com/user-attachments/assets/e8db0620-e940-405d-9305-671e03901397" />
+
 
 #Bước 4: Đưa dữ liệu (Restore) vào Database. Dùng file .dump đã giải nén ở /tmp để khôi phục cấu trúc và dữ liệu:
 ```bash
