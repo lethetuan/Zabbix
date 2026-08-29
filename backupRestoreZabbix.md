@@ -56,6 +56,12 @@ rm -f $BACKUP_DIR/zabbix_db_$DATE.dump $BACKUP_DIR/zabbix_config_$DATE.tar.gz
 find $BACKUP_DIR -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
 
 echo "=== Backup Hoàn Tất ==="
+
+echo "Đang copy sang thư mục Share trên Windows Server..."
+cp $BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz /mnt/windows_backup/
+
+# Tùy chọn: Tự động xóa các file backup CŨ HƠN 14 ngày trên Windows Server để đỡ đầy ổ
+find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 -exec rm -f {} \;
 ```
 
 **Bước 3: Phân quyền và đặt lịch chạy tự động**
@@ -69,6 +75,53 @@ sudo crontab -e
 ```bash
 0 2 * * * /opt/zabbix_backup.sh >> /var/log/zabbix_backup.log 2>&1
 ```
+
+**Bước 4: Tạo và share thư mục lưu file backup trên Window server**
+#1. Chuẩn bị trên Windows Server
+#Tạo một thư mục trên Windows Server (Ví dụ: D:\Zabbix_Backup).
+#Click chuột phải vào thư mục -> Properties -> Tab Sharing -> Advanced Sharing.
+#Tích chọn Share this folder. Chú ý tên ở ô Share name (ví dụ mặc định là Zabbix_Backup).
+#Bấm nút Permissions, cấp quyền Full Control cho tài khoản Windows mà bạn định dùng.
+
+#2. Cài đặt công cụ và tạo thư mục ảo trên Ubuntu Server
+```bash
+sudo apt update && sudo apt install -y cifs-utils
+sudo mkdir -p /mnt/windows_backup
+```
+#3. Tạo file lưu thông tin đăng nhập an toàn
+```bash
+sudo nano /root/.smb_creds
+```
+
+#Dán nội dung sau vào và thay bằng tài khoản của Windows Server:
+```bash
+username=TAI_KHOAN_WINDOWS
+password=MAT_KHAU_WINDOWS
+domain=WORKGROUP
+```
+(Lưu ý: Nếu Windows Server của bạn nằm trong hệ thống Domain Controller (AD), hãy thay chữ WORKGROUP bằng tên Domain của bạn.)
+#Lưu file lại và phân quyền tuyệt đối bảo mật:
+```bash
+sudo chmod 600 /root/.smb_creds
+```
+#4. Cấu hình tự động kết nối ổ đĩa (Auto-Mount). Mở file cấu hình ổ đĩa của Ubuntu Server:
+```bash
+sudo nano /etc/fstab
+```
+#Kéo xuống DƯỚI CÙNG của file, thêm dòng sau. Nhớ thay đổi 192.168.1.10 thành IP thực tế của Windows Server và Zabbix_Backup thành tên thư mục share:
+
+```bash
+//192.168.1.10/Zabbix_Backup /mnt/windows_backup cifs credentials=/root/.smb_creds,iocharset=utf8,file_mode=0777,dir_mode=0777,noperm,vers=3.0 0 0
+```
+#(Tham số vers=3.0 để ép Ubuntu dùng chuẩn SMB phiên bản 3.0 an toàn và tương thích tốt nhất với Windows Server đời mới). Lưu file lại và chạy lệnh sau để kết nối ngay lập tức:
+
+```bash
+sudo mount -a
+```
+#Ghi nhớ 4 thông tin: IP của Windows Server (VD: 192.168.1.10), Tên Share (Zabbix_Backup), Tài khoản Windows, Mật khẩu Windows.
+
+#Lưu lại. Kết quả: Từ nay, sau khi tiến trình sao lưu lúc 2h sáng trên Ubuntu hoàn tất, file nén .tar.gz sẽ tự động "bay" thẳng sang ổ D:\Zabbix_Backup trên con Windows Server của bạn!
+
 # Kịch Bản Disaster Recovery (Backup & Restore) Zabbix Server
 
 #Bước 1: Chuẩn bị Server mới và cài đặt hệ điều hành Ubuntu Server mới.
@@ -83,9 +136,6 @@ tar -xzvf ZABBIX_FULL_BACKUP_xxxx.tar.gz
 
 #Giải nén thư mục cấu hình về đúng vị trí cũ (/opt/zabbix)
 sudo tar -xzvpf zabbix_config_xxxx.tar.gz -C /opt
-
-
-
 
 ```
 
