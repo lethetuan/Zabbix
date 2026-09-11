@@ -1,5 +1,5 @@
 # Tài liệu hướng dẫn chi tiết các bước triển khai Zabbix qua Docker
-
+ Yêu cầu máy chủ có tối thiểu 4GB RAM (khuyên dùng 6GB - 8GB RAM) để tránh trường hợp người dùng cài trên VPS 1GB/2GB RAM bị hệ thống Linux kill process do tràn RAM (Out of Memory)
 ## 1. Cài đặt Docker và các thành phần cốt lõi
 
 ### Bước 1: Cập nhật index các gói phần mềm của hệ thống Server
@@ -165,7 +165,7 @@ services:
     image: postgres:16-alpine
     container_name: zabbix-postgres
     restart: unless-stopped
-    # Tinh chỉnh DB giống file 1 để Zabbix không bị nghẽn cổ chai
+    # Tinh chỉnh Database để Zabbix không bị nghẽn cổ chai
     command: >
       postgres -c max_connections=200
                -c shared_buffers=1GB
@@ -189,7 +189,7 @@ services:
       start_period: 10s
 
   zabbix-server:
-    # Dùng version cụ thể giống file 2 để đảm bảo tính ổn định
+    # Dùng version cụ thể để đảm bảo tính ổn định
     image: zabbix/zabbix-server-pgsql:alpine-7.0.30
     container_name: zabbix-server
     restart: unless-stopped
