@@ -66,13 +66,15 @@ rm -f "$BACKUP_DIR/zabbix_db_$DATE.dump" "$BACKUP_DIR/zabbix_config_$DATE.tar.gz
 find "$BACKUP_DIR" -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
 
 # 8. Đồng bộ sang thư mục Share trên Windows Server
-if mountpoint -q /mnt/windows_backup; then
+if timeout 10 touch /mnt/windows_backup/.test_write 2>/dev/null; then
     echo "Đang copy sang Windows Server..."
     cp "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz" /mnt/windows_backup/
     find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 -exec rm -f {} \;
+    rm -f /mnt/windows_backup/.test_write
     echo "Đồng bộ Windows Server thành công."
 else
-    echo "CẢNH BÁO: Thư mục /mnt/windows_backup chưa mount! Bỏ qua bước copy off-site." >&2
+    echo "CẢNH BÁO: Thư mục /mnt/windows_backup không thể ghi hoặc bị lỗi kết nối! Cố gắng remount..." >&2
+    sudo mount -o remount /mnt/windows_backup || sudo mount -a
 fi
 
 echo "=== [$(date)] Backup Hoàn Tất Thành Công! ==="
