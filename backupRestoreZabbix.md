@@ -17,14 +17,14 @@ sudo nano /opt/zabbix_backup.sh
 **Bước 2: Cấu hình nội dung Script Backup**
 ```bash
 #!/bin/bash
-set -o pipefail # Đảm bảo bắt lỗi ngay cả khi dùng pipeline
+set -o pipefail
 
 BACKUP_DIR="/backup/zabbix"
 mkdir -p "$BACKUP_DIR"
 DATE=$(date +"%Y%m%d_%H%M")
 ZABBIX_DIR="/opt/zabbix"
 
-# 1. ĐỌC BIẾN TỪ FILE .ENV CỦA DỰ ÁN
+# 1. ĐỌC BIẾN TỪ FILE .ENV
 if [ -f "$ZABBIX_DIR/.env" ]; then
     set -a
     source "$ZABBIX_DIR/.env"
@@ -42,39 +42,38 @@ KEEP_DAYS=7
 
 echo "=== [$(date)] Bắt đầu Backup Zabbix ($DATE) ==="
 
-# 3. Backup Database & Kiểm tra lỗi
+# 3. Backup Database kèm Password
 echo "Đang dump database $DB_NAME từ container $DB_CONTAINER..."
-docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" --format=custom "$DB_NAME" > "$BACKUP_DIR/zabbix_db_$DATE.dump"
+docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$DB_CONTAINER" pg_dump -U "$DB_USER" --format=custom "$DB_NAME" > "$BACKUP_DIR/zabbix_db_$DATE.dump"
 
 if [ $? -ne 0 ] || [ ! -s "$BACKUP_DIR/zabbix_db_$DATE.dump" ]; then
-    echo "[$(date)] LỖI NGHIÊM TRỌNG: Backup Database thất bại hoặc file dump rỗng! Dừng script để bảo vệ backup cũ." >&2
+    echo "[$(date)] LỖI NGHIÊM TRỌNG: Backup Database thất bại hoặc file dump rỗng!" >&2
     rm -f "$BACKUP_DIR/zabbix_db_$DATE.dump"
     exit 1
 fi
 
-# 4. Backup thư mục cấu hình /opt/zabbix
-tar -czf "$BACKUP_DIR/zabbix_config_$DATE.tar.gz" -C /opt zabbix
+# 4. Backup cấu hình (Loại trừ thư mục data DB nếu có mount bên trong)
+tar --exclude='zabbix/data' --exclude='zabbix/pgdata' -czf "$BACKUP_DIR/zabbix_config_$DATE.tar.gz" -C /opt zabbix
 
-# 5. Gom lại thành 1 file duy nhất
+# 5. Gom thành 1 file .tar (Không cần gzip lần 2 để tiết kiệm CPU)
 tar -cf "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar" -C "$BACKUP_DIR" "zabbix_db_$DATE.dump" "zabbix_config_$DATE.tar.gz"
-gzip -f "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar"
 
 # 6. Xóa các file trung gian
 rm -f "$BACKUP_DIR/zabbix_db_$DATE.dump" "$BACKUP_DIR/zabbix_config_$DATE.tar.gz"
 
-# 7. Xóa backup cũ trên máy Local
-find "$BACKUP_DIR" -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
+# 7. Xóa backup cũ Local
+find "$BACKUP_DIR" -name "ZABBIX_FULL_BACKUP_*.tar" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
 
-# 8. Đồng bộ sang thư mục Share trên Windows Server
+# 8. Đồng bộ sang Windows Server
 if timeout 10 touch /mnt/windows_backup/.test_write 2>/dev/null; then
     echo "Đang copy sang Windows Server..."
-    cp "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz" /mnt/windows_backup/
-    find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 -exec rm -f {} \;
+    cp "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar" /mnt/windows_backup/
+    find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar" -type f -mtime +14 -exec rm -f {} \;
     rm -f /mnt/windows_backup/.test_write
     echo "Đồng bộ Windows Server thành công."
 else
-    echo "CẢNH BÁO: Thư mục /mnt/windows_backup không thể ghi hoặc bị lỗi kết nối! Cố gắng remount..." >&2
-    sudo mount -o remount /mnt/windows_backup || sudo mount -a
+    echo "CẢNH BÁO: Mất kết nối Windows Backup! Đang thử mount lại..." >&2
+    mount -o remount /mnt/windows_backup || mount -a
 fi
 
 echo "=== [$(date)] Backup Hoàn Tất Thành Công! ==="
@@ -215,7 +214,7 @@ sudo docker exec zabbix-postgres pg_isready
 cd /opt/zabbix
 set -a && source .env && set +a
 # 2. Chạy lệnh Restore (Tự động lấy đúng User và DB Name trong .env)
-cat /tmp/zabbix_db_*.dump | sudo docker exec -i zabbix-postgres pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists
+cat /tmp/zabbix_db_*.dump | sudo docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" zabbix-postgres pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists
 ```
 Bỏ qua các thông báo lỗi liên quan đến owner hoặc extension trong quá trình restore, chỉ cần sau khi hoàn tất Zabbix Server kết nối thành công là được
 (Thời gian chạy tùy thuộc vào dung lượng database cũ, thường mất từ 10 giây đến vài phút).
