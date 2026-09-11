@@ -165,10 +165,13 @@ services:
     image: postgres:16-alpine
     container_name: zabbix-postgres
     restart: unless-stopped
-# CHÚ Ý: Service postgres-server không hề có mục ports. 
-# Điều này có nghĩa là cổng 5432 của PostgreSQL chỉ được mở ngầm bên trong mạng ảo zabbix-net 
-# để zabbix-server và zabbix-web kết nối vào. Từ bên ngoài (kể cả trên chính máy chủ Ubuntu), 
-# không ai có thể can thiệp trực tiếp vào database.
+    # Tinh chỉnh DB giống file 1 để Zabbix không bị nghẽn cổ chai
+    command: >
+      postgres -c max_connections=200
+               -c shared_buffers=1GB
+               -c work_mem=16MB
+               -c maintenance_work_mem=128MB
+               -c effective_cache_size=3GB
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -178,7 +181,6 @@ services:
       - zabbix-postgres-data:/var/lib/postgresql/data
     networks:
       - zabbix-net
-# Healthcheck đảm bảo DB sẵn sàng trước khi Zabbix Server kết nối
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -187,14 +189,12 @@ services:
       start_period: 10s
 
   zabbix-server:
+    # Dùng version cụ thể giống file 2 để đảm bảo tính ổn định
     image: zabbix/zabbix-server-pgsql:alpine-7.0.30
     container_name: zabbix-server
     restart: unless-stopped
-# chú ý: đổi lại ip đúng với ip thực tế của server
     ports:
-      - "192.168.1.100:10051:10051"
-#cấu hình có sử dụng các biến môi trường (ví dụ: ${POSTGRES_USER}, ${POSTGRES_PASSWORD}, ${TIMEZONE}), 
-#bạn hãy chắc chắn rằng mình đã tạo một file tên là .env nằm cùng thư mục với file docker-compose.yml để khai báo các giá trị này.  
+      - "10051:10051"
     environment:
       - DB_SERVER_HOST=postgres-server
       - POSTGRES_USER=${POSTGRES_USER}
@@ -212,18 +212,18 @@ services:
       - NET_RAW
     depends_on:
       postgres-server:
-        condition: service_healthy # Chỉ chạy khi Postgres đã pass healthcheck
+        condition: service_healthy
     networks:
       - zabbix-net
 
   zabbix-web:
+    # Dùng version cụ thể giống file 2
     image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0.30
     container_name: zabbix-web
     restart: unless-stopped
-# chú ý: đổi lại ip đúng với ip thực tế của server
+    # Chỉ mở port 80 để dễ dàng chạy ngay (Nếu muốn bảo mật theo IP thì sửa thành "IP_CỦA_BẠN:80:8080")
     ports:
-      - "192.168.1.100:80:8080"
-      - "192.168.1.100:443:8443"
+      - "80:8080"
     environment:
       - ZBX_SERVER_HOST=zabbix-server
       - DB_SERVER_HOST=postgres-server
@@ -234,7 +234,7 @@ services:
       - TZ=${TIMEZONE}
     depends_on:
       postgres-server:
-        condition: service_healthy # Web cũng cần chờ DB sẵn sàng
+        condition: service_healthy
       zabbix-server:
         condition: service_started
     networks:
