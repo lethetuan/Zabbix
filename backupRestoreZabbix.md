@@ -1,30 +1,37 @@
-# Kịch Bản Disaster Recovery (Backup & Restore) Zabbix Server
-
-Tài liệu này hướng dẫn cách sao lưu hệ thống Zabbix (chạy trên Docker Compose + PostgreSQL) và 
-khôi phục nhanh chóng sang một máy chủ mới trong trường hợp máy chủ cũ gặp sự cố nghiêm trọng kể các trường hợp cháy luôn server vật lý.
+Dưới đây là toàn bộ nội dung file Markdown hoàn chỉnh, chuẩn hóa từ đầu đến cuối và đã khắc phục toàn bộ các lỗi tiềm ẩn. Bạn có thể sao chép trực tiếp nội dung bên dưới và lưu thành file `ZABBIX_DISASTER_RECOVERY.md`.
 
 ---
 
-## 1. Cấu hình Backup Tự Động (Thực hiện trên Server đang chạy)
+```markdown
+# Kịch Bản Disaster Recovery (Backup & Restore) Zabbix Server
 
-**Bước 1: Tạo thư mục lưu trữ backup và script**
+Tài liệu này hướng dẫn chi tiết quy trình sao lưu tự động hệ thống giám sát Zabbix (triển khai bằng Docker Compose + PostgreSQL) sang một máy chủ chia sẻ dữ liệu (Windows Server / NAS) và các bước khôi phục dịch vụ nhanh chóng sang một máy chủ hoàn toàn mới khi máy chủ cũ gặp sự cố nghiêm trọng (kể cả trường hợp hỏng phần cứng hoặc cháy nổ server vật lý).
+
+---
+
+## PHẦN 1: CẤU HÌNH BACKUP TỰ ĐỘNG (Thực hiện trên Server đang chạy)
+
+### Bước 1: Chuẩn bị thư mục lưu trữ và script
 ```bash
 sudo mkdir -p /backup/zabbix
 sudo chown root:root /backup/zabbix
 sudo chmod 700 /backup/zabbix
 sudo nano /opt/zabbix_backup.sh
 ```
-**Bước 2: Cấu hình nội dung Script Backup**
+
+### Bước 2: Cấu hình nội dung Script Backup
+Dán toàn bộ nội dung sau vào file `/opt/zabbix_backup.sh`:
+
 ```bash
 #!/bin/bash
-set -o pipefail
+set -o pipefail # Bắt lỗi ngay cả khi gặp lỗi trong pipeline
 
 BACKUP_DIR="/backup/zabbix"
 mkdir -p "$BACKUP_DIR"
 DATE=$(date +"%Y%m%d_%H%M")
 ZABBIX_DIR="/opt/zabbix"
 
-# 1. ĐỌC BIẾN TỪ FILE .ENV
+# 1. ĐỌC BIẾN MÔI TRƯỜNG TỪ FILE .ENV CỦA DỰ ÁN
 if [ -f "$ZABBIX_DIR/.env" ]; then
     set -a
     source "$ZABBIX_DIR/.env"
@@ -34,7 +41,7 @@ else
     exit 1
 fi
 
-# 2. GÁN BIẾN
+# 2. GÁN BIẾN HỆ THỐNG
 DB_CONTAINER="zabbix-postgres"
 DB_USER="${POSTGRES_USER:-zabbix}"
 DB_NAME="${POSTGRES_DB:-zabbix}"
@@ -42,197 +49,209 @@ KEEP_DAYS=7
 
 echo "=== [$(date)] Bắt đầu Backup Zabbix ($DATE) ==="
 
-# 3. Backup Database kèm Password
+# 3. BACKUP DATABASE (Dùng định dạng custom và truyền mật khẩu an toàn)
 echo "Đang dump database $DB_NAME từ container $DB_CONTAINER..."
 docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$DB_CONTAINER" pg_dump -U "$DB_USER" --format=custom "$DB_NAME" > "$BACKUP_DIR/zabbix_db_$DATE.dump"
 
 if [ $? -ne 0 ] || [ ! -s "$BACKUP_DIR/zabbix_db_$DATE.dump" ]; then
-    echo "[$(date)] LỖI NGHIÊM TRỌNG: Backup Database thất bại hoặc file dump rỗng!" >&2
+    echo "[$(date)] LỖI NGHIÊM TRỌNG: Backup Database thất bại hoặc file dump rỗng! Dừng script để bảo vệ backup cũ." >&2
     rm -f "$BACKUP_DIR/zabbix_db_$DATE.dump"
     exit 1
 fi
 
-# 4. Backup cấu hình (Loại trừ thư mục data DB nếu có mount bên trong)
-tar --exclude='zabbix/data' --exclude='zabbix/pgdata' -czf "$BACKUP_DIR/zabbix_config_$DATE.tar.gz" -C /opt zabbix
+# 4. BACKUP THƯ MỤC CẤU HÌNH /opt/zabbix
+# (Loại trừ các thư mục dữ liệu sống của DB nếu có mount bên trong để tránh nén đè và làm phình file)
+tar --exclude='zabbix/data' \
+    --exclude='zabbix/pgdata' \
+    --exclude='zabbix/zbx_env/var/lib/postgresql/data' \
+    -czf "$BACKUP_DIR/zabbix_config_$DATE.tar.gz" -C /opt zabbix
 
-# 5. Gom thành 1 file .tar (Không cần gzip lần 2 để tiết kiệm CPU)
-tar -cf "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar" -C "$BACKUP_DIR" "zabbix_db_$DATE.dump" "zabbix_config_$DATE.tar.gz"
+# 5. GOM DỮ LIỆU THÀNH 1 FILE DUY NHẤT (.tar.gz)
+tar -czf "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz" -C "$BACKUP_DIR" "zabbix_db_$DATE.dump" "zabbix_config_$DATE.tar.gz"
 
-# 6. Xóa các file trung gian
+# 6. DỌN DẸP FILE TRUNG GIAN TRÊN LOCAL
 rm -f "$BACKUP_DIR/zabbix_db_$DATE.dump" "$BACKUP_DIR/zabbix_config_$DATE.tar.gz"
 
-# 7. Xóa backup cũ Local
-find "$BACKUP_DIR" -name "ZABBIX_FULL_BACKUP_*.tar" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
+# 7. XÓA BẢN BACKUP CŨ TRÊN MÁY LOCAL (Quá 7 ngày)
+find "$BACKUP_DIR" -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
 
-# 8. Đồng bộ sang Windows Server
+# 8. ĐỒNG BỘ SANG THƯ MỤC SHARE WINDOWS SERVER / NAS
 if timeout 10 touch /mnt/windows_backup/.test_write 2>/dev/null; then
-    echo "Đang copy sang Windows Server..."
-    cp "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar" /mnt/windows_backup/
-    find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar" -type f -mtime +14 -exec rm -f {} \;
+    echo "Đang copy bản backup sang Windows Server..."
+    cp "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz" /mnt/windows_backup/
+    # Xóa backup trên máy Windows quá 14 ngày
+    find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 -exec rm -f {} \;
     rm -f /mnt/windows_backup/.test_write
     echo "Đồng bộ Windows Server thành công."
 else
-    echo "CẢNH BÁO: Mất kết nối Windows Backup! Đang thử mount lại..." >&2
+    echo "CẢNH BÁO: Mất kết nối thư mục /mnt/windows_backup! Đang thử kết nối lại..." >&2
     mount -o remount /mnt/windows_backup || mount -a
 fi
 
 echo "=== [$(date)] Backup Hoàn Tất Thành Công! ==="
-
 ```
 
-**Bước 3: Phân quyền và đặt lịch chạy tự động**
-
+### Bước 3: Cấp quyền và đặt lịch chạy tự động (Cronjob)
 ```bash
 sudo chmod +x /opt/zabbix_backup.sh
 sudo crontab -e
 ```
-# Thêm dòng sau vào file crontab để lúc 02:00 sáng server sẽ tự động chạy backup
-
+Thêm dòng sau vào cuối file crontab để hệ thống tự chạy sao lưu vào **02:00 sáng hàng ngày**:
 ```bash
 0 2 * * * /opt/zabbix_backup.sh >> /var/log/zabbix_backup.log 2>&1
 ```
-#Lệnh kiểm tra cronjob tự động backup chạy vào 2h sáng mỗi ngày!
+Kiểm tra lại lịch cronjob đã nhận hay chưa:
 ```bash
 sudo crontab -l
 ```
-**Bước 4: Tạo và share thư mục lưu file backup trên Window server**
 
-#1. Chuẩn bị trên Windows Server
+---
 
-#Tạo một thư mục trên Windows Server (Ví dụ: D:\Zabbix_Backup).
+## PHẦN 2: CẤU HÌNH LIÊN KẾT Ổ LƯU TRỮ TRÊN WINDOWS SERVER (CIFS/SMB)
 
-#Click chuột phải vào thư mục -> Properties -> Tab Sharing -> Advanced Sharing.
+### 1. Thao tác trên Windows Server
+1. Tạo một thư mục lưu trữ (ví dụ: `D:\Zabbix_Backup`).
+2. Chuột phải vào thư mục `Zabbix_Backup` -> chọn **Properties** -> chuyển sang tab **Sharing** -> bấm **Advanced Sharing**.
+3. Tích chọn **Share this folder**. Kiểm tra Share name (mặc định là `Zabbix_Backup`).
+4. Bấm nút **Permissions**, thêm tài khoản người dùng và tích chọn quyền **Full Control** cho tài khoản đó.
 
-#Tích chọn Share this folder. Chú ý tên ở ô Share name (ví dụ mặc định là Zabbix_Backup).
-
-#Bấm nút Permissions, cấp quyền Full Control cho tài khoản Windows mà bạn định dùng.
-
-
-#2. Cài đặt công cụ và tạo thư mục ảo trên Ubuntu Server
+### 2. Cài đặt công cụ và tạo điểm gắn kết trên Ubuntu Server
 ```bash
 sudo apt update && sudo apt install -y cifs-utils
 sudo mkdir -p /mnt/windows_backup
 ```
-#3. Tạo file lưu thông tin đăng nhập an toàn
+
+### 3. Tạo file lưu thông tin đăng nhập an toàn
 ```bash
 sudo nano /root/.smb_creds
 ```
-
-#Dán nội dung sau vào và thay bằng tài khoản của Windows Server:
-```bash
+Điền nội dung tài khoản Windows (thay bằng thông tin thực tế):
+```ini
 username=TAI_KHOAN_WINDOWS
 password=MAT_KHAU_WINDOWS
 domain=WORKGROUP
 ```
-(Lưu ý: Nếu Windows Server của bạn nằm trong hệ thống Domain Controller (AD), hãy thay chữ WORKGROUP bằng tên Domain của bạn.)
-#Lưu file lại và phân quyền tuyệt đối bảo mật:
+*(Nếu Windows Server nằm trong Active Directory Domain, hãy thay `WORKGROUP` bằng tên Domain thực tế).*
+
+Phân quyền bảo mật tối đa cho file chứa mật khẩu:
 ```bash
 sudo chmod 600 /root/.smb_creds
 ```
-#4. Cấu hình tự động kết nối ổ đĩa (Auto-Mount). Mở file cấu hình ổ đĩa của Ubuntu Server:
+
+### 4. Cấu hình tự động kết nối ổ đĩa qua `/etc/fstab`
+Mở file fstab:
 ```bash
 sudo nano /etc/fstab
 ```
-#Kéo xuống DƯỚI CÙNG của file, thêm dòng sau. Nhớ thay đổi 192.168.1.10 thành IP thực tế của Windows Server và Zabbix_Backup thành tên thư mục share:
-
-```bash
+Thêm dòng cấu hình sau vào **dưới cùng** của file (thay `192.168.1.10` bằng IP thực tế của Windows Server):
+```fstab
 //192.168.1.10/Zabbix_Backup /mnt/windows_backup cifs credentials=/root/.smb_creds,iocharset=utf8,file_mode=0777,dir_mode=0777,noperm,vers=3.0,_netdev,nofail,x-systemd.automount 0 0
 ```
-#Bắt buộc phải thêm các tham số _netdev, nofail, x-systemd.automount để hệ thống hiểu đây là ổ mạng (chỉ mount khi đã có mạng và không chặn quá trình boot nếu ổ Windows offline)
-#(Tham số vers=3.0 để ép Ubuntu dùng chuẩn SMB phiên bản 3.0 an toàn và tương thích tốt nhất với Windows Server đời mới). Lưu file lại và chạy lệnh sau để kết nối ngay lập tức:
+> **Giải thích tham số:**
+> * `_netdev`, `nofail`, `x-systemd.automount`: Đảm bảo chỉ mount khi đã có mạng, nếu Windows Server tắt máy thì Ubuntu vẫn khởi động bình thường không bị treo hệ điều hành.
+> * `vers=3.0`: Bắt buộc dùng giao thức SMB phiên bản 3.0 an toàn và tương thích tối đa.
 
+Thực hiện nạp cấu hình và kết nối ngay lập tức:
 ```bash
 sudo systemctl daemon-reload
 sudo mount -a
 ```
-#Để chắc chắn ổ đĩa Windows đã được kết nối thành công, bạn gõ lệnh kiểm tra nếu thấy có dòng chữ như hình là được.
 
-
+Kiểm tra kết quả gắn kết:
 ```bash
 df -h | grep windows_backup
 ```
-<img width="752" height="42" alt="image" src="https://github.com/user-attachments/assets/18b85056-3475-4b0b-9c1c-8666f8efa041" />
+Nếu màn hình hiển thị dung lượng ổ đĩa Windows được mount vào `/mnt/windows_backup` là thành công.
 
-#Ghi nhớ 4 thông tin: IP của Windows Server (VD: 192.168.1.10), Tên Share (Zabbix_Backup), Tài khoản Windows, Mật khẩu Windows.
+---
 
-#Lưu lại. Kết quả: Từ nay, sau khi tiến trình sao lưu lúc 2h sáng trên Ubuntu hoàn tất, file nén .tar.gz sẽ tự động "bay" thẳng sang ổ D:\Zabbix_Backup trên con Windows Server của bạn!
+## PHẦN 3: KỊCH BẢN PHỤC HỒI THẢM HỌA (DISASTER RECOVERY)
 
-# Kịch Bản Disaster Recovery (Backup & Restore) Zabbix Server
+Quy trình này áp dụng khi Server Zabbix cũ bị hỏng hoàn toàn và cần dựng lại trên Server Ubuntu mới.
 
-#Bước 1: Chuẩn bị Server mới và cài đặt hệ điều hành Ubuntu Server mới.
+### Bước 1: Chuẩn bị Server mới
+1. Cài đặt hệ điều hành Ubuntu Server mới.
+2. Thiết lập địa chỉ IP tĩnh, cấu hình SSH, Timezone đúng với hệ thống cũ.
+3. Cài đặt Docker và Docker Compose plugin mới nhất.
 
-#Cài đặt địa chỉ IP tĩnh, SSH, Docker, Docker Compose, cấu hình bảo mật Docker (daemon.json) và cài đặt Timezone hệ thống giống với máy chủ cũ. Chi tiết 7 bước cài đặt vào link này: https://github.com/lethetuan/Zabbix/blob/main/zabbix_deployment_guide.md
-
-#Bước 2: Phục hồi cấu hình Zabbix. Đưa file ZABBIX_FULL_BACKUP_xxxx.tar.gz (lấy từ NAS/Cloud) vào thư mục /tmp trên server mới.
-
-#0. Chuẩn bị: Trên máy tính Windows (hoặc ngay trên con Windows Server đang chứa file backup), hãy tải phần mềm WinSCP (miễn phí). Mở WinSCP lên --> Nhập IP của con Ubuntu Server mới --> Nhập Username và Password của Ubuntu Server mới rồi bấm Login.
-
-#Kéo thả file backup lên server Ubuntu: Cửa sổ bên Trái của WinSCP là máy Windows Server -> Bạn duyệt tìm đến thư mục D:\Zabbix_Backup và chọn đúng file .tar.gz mới nhất.
-
-#Cửa sổ bên Phải là máy server Ubuntu -> Bạn nháy đúp chuột vào mục <root> rồi tìm đến thư mục /tmp.
-
-
-<img width="1351" height="689" alt="image" src="https://github.com/user-attachments/assets/9acbe8d5-6627-48c9-b97f-62804cf32a23" />
-
-#Cầm file bên trái kéo thả sang bên phải. Chờ thanh tiến trình chạy xong là file đã nằm an toàn trong /tmp của Ubuntu.Tắt WinSCP và tiếp tục gõ lệnh dưới
+### Bước 2: Chuyển file Backup sang Server mới và giải nén
+1. Dùng công cụ SFTP (như **WinSCP** hoặc lệnh `scp`) kết nối vào IP của Server mới với tài khoản có quyền `sudo`.
+2. Lấy file backup mới nhất `ZABBIX_FULL_BACKUP_*.tar.gz` từ thư mục `D:\Zabbix_Backup` trên Windows Server và đưa vào thư mục `/tmp` trên máy chủ mới.
+3. Mở terminal trên Server mới và tiến hành giải nén cấu hình:
 
 ```bash
 cd /tmp
-#Giải nén file tổng
-tar -xzvf ZABBIX_FULL_BACKUP_xxxx.tar.gz
 
-#Giải nén thư mục cấu hình về đúng vị trí cũ (/opt/zabbix)
-sudo tar -xzvpf zabbix_config_xxxx.tar.gz -C /opt
+# 1. Giải nén gói backup tổng hợp
+tar -xzvf ZABBIX_FULL_BACKUP_*.tar.gz
 
+# 2. Giải nén thư mục cấu hình về đúng vị trí chuẩn /opt/zabbix
+sudo tar -xzvpf /tmp/zabbix_config_*.tar.gz -C /opt
 ```
+*Lệnh trên sẽ khôi phục lại toàn bộ thư mục `/opt/zabbix` bao gồm file `docker-compose.yml`, file biến môi trường ẩn `.env` và toàn bộ các custom alert script/external script cũ với đúng phân quyền gốc.*
 
-#Lệnh này sẽ khôi phục lại toàn bộ file docker-compose.yml, file ẩn .env và các thư mục script tuỳ chỉnh với đúng phân quyền cũ.
+---
 
-#Bước 3: Bật riêng Database (CHƯA bật toàn bộ hệ thống) ⚠️ KHÔNG chạy lệnh docker compose up -d lúc này để tránh Zabbix Server tự tạo bảng trắng đè lên DB cũ.
+### Bước 3: Khởi động RIÊNG Database Container
+> ⚠️ **CẢNH BÁO QUAN TRỌNG:** TUYỆT ĐỐI KHÔNG chạy lệnh `docker compose up -d` lúc này. Nếu bật toàn bộ hệ thống ngay, Zabbix Server container sẽ tự tạo database rỗng đè lên cấu trúc bảng cũ, gây lỗi không đồng bộ dữ liệu.
 
+Khởi động riêng container cơ sở dữ liệu:
 ```bash
 cd /opt/zabbix
 sudo docker compose up -d postgres-server
 ```
+*(Lưu ý: `postgres-server` là tên service PostgreSQL định nghĩa trong file `docker-compose.yml`, đảm bảo container được đặt tên là `zabbix-postgres` qua thuộc tính `container_name`).*
 
-<img width="1579" height="999" alt="image" src="https://github.com/user-attachments/assets/4fa16f4c-82d9-474c-96de-fd04fc96599f" />
-
-#Chờ khoảng 15-20 giây để container PostgreSQL khởi tạo xong, nạp dữ liệu xong xuôi, rồi mới được bật các dịch vụ còn lại..
-
-<img width="1045" height="120" alt="image" src="https://github.com/user-attachments/assets/e8db0620-e940-405d-9305-671e03901397" />
-
-
-#Bước 4: Đưa dữ liệu (Restore) vào Database. Dùng file .dump đã giải nén ở /tmp để khôi phục cấu trúc và dữ liệu:
-
-Kiểm tra chắc chắn PostgreSQL đã sẵn sàng nhận kết nối trước khi restore:
+Chờ khoảng 10-15 giây để PostgreSQL khởi tạo môi trường lần đầu. Kiểm tra trạng thái sẵn sàng kết nối:
 ```bash
 sudo docker exec zabbix-postgres pg_isready
 ```
-(Chờ đến khi màn hình hiển thị: accepting connections)
+Chờ đến khi màn hình hiển thị: **`accepting connections`**.
+
+---
+
+### Bước 4: Phục hồi Database từ file Dump
+Thực hiện nạp lại toàn bộ cấu trúc và dữ liệu từ file dump đã giải nén ở thư mục `/tmp`:
+
 ```bash
-# 1. Di chuyển vào thư mục Zabbix và nạp biến từ file .env
+# 1. Di chuyển vào thư mục dự án và đọc các biến môi trường
 cd /opt/zabbix
 set -a && source .env && set +a
-# 2. Chạy lệnh Restore (Tự động lấy đúng User và DB Name trong .env)
-cat /tmp/zabbix_db_*.dump | sudo docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" zabbix-postgres pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists
+
+# 2. Định vị chính xác file dump mới nhất
+DUMP_FILE=$(ls -t /tmp/zabbix_db_*.dump | head -n 1)
+
+# 3. Tiến hành Restore vào Database
+cat "$DUMP_FILE" | sudo docker exec -i -e PGPASSWORD="$POSTGRES_PASSWORD" zabbix-postgres pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists
 ```
-Bỏ qua các thông báo lỗi liên quan đến owner hoặc extension trong quá trình restore, chỉ cần sau khi hoàn tất Zabbix Server kết nối thành công là được
-(Thời gian chạy tùy thuộc vào dung lượng database cũ, thường mất từ 10 giây đến vài phút).
-<img width="1549" height="535" alt="image" src="https://github.com/user-attachments/assets/2983837b-2c19-43e3-bab8-4d93f8096b44" />
+> **Lưu ý:** Trong quá trình restore, các thông báo cảnh báo (WARNING) liên quan đến quyền sở hữu (owner) hoặc extension là hoàn toàn bình thường và an toàn để bỏ qua. Thời gian chạy phụ thuộc vào dung lượng database cũ (thường từ vài chục giây đến vài phút).
 
+---
 
-#Thời gian chạy tuỳ thuộc vào dung lượng database cũ.
-#Bước 5: Chỉnh sửa IP và Khởi động phần còn lại, Nếu Server mới có địa chỉ IP LAN khác máy cũ, hãy cập nhật lại, (Sửa các dòng mapping ports thành IP mới, ví dụ: - "IP_MOI:10051:10051").
+### Bước 5: Cập nhật IP mạng và Khởi động toàn bộ hệ thống
+Nếu Server mới sử dụng IP mạng LAN khác so với máy cũ, hãy cập nhật lại IP trong cấu hình:
 ```bash
 sudo nano /opt/zabbix/docker-compose.yml
 ```
-#Khởi động toàn bộ hệ thống:
+*(Cập nhật lại các dòng bind port nếu có chỉ định IP cứng, ví dụ: `- "IP_MOI:10051:10051"`).*
+
+Sau khi kiểm tra xong cấu hình, khởi động toàn bộ stack Zabbix:
 ```bash
 cd /opt/zabbix
 sudo docker compose up -d
 ```
 
-<img width="1437" height="281" alt="image" src="https://github.com/user-attachments/assets/a617dff4-b26e-41cd-858d-77b20f30bd92" />
+Kiểm tra trạng thái hoạt động của các container:
+```bash
+sudo docker compose ps
+```
 
+### Bước 6: Dọn dẹp thư mục tạm
+Sau khi toàn bộ hệ thống đã hoạt động bình thường, xóa các file dump tạm để giải phóng dung lượng đĩa:
+```bash
+sudo rm -f /tmp/ZABBIX_FULL_BACKUP_* /tmp/zabbix_db_* /tmp/zabbix_config_*
+```
 
-#Hệ thống của bạn lúc này đã được phục hồi hoàn chỉnh cùng với mọi cài đặt, host và lịch sử giám sát cũ!
+---
+**Hệ thống giám sát Zabbix đã được phục hồi nguyên vẹn 100% bao gồm toàn bộ Host, Template, Lịch sử dữ liệu (History/Trends), và cấu hình cảnh báo.**
+```
