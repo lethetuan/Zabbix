@@ -1,12 +1,8 @@
-Dưới đây là toàn bộ nội dung file Markdown hoàn chỉnh, chuẩn hóa từ đầu đến cuối và đã khắc phục toàn bộ các lỗi tiềm ẩn. Bạn có thể sao chép trực tiếp nội dung bên dưới và lưu thành file `ZABBIX_DISASTER_RECOVERY.md`.
-
----
-
 ```markdown
 # Kịch Bản Disaster Recovery (Backup & Restore) Zabbix Server
 
 Tài liệu này hướng dẫn chi tiết quy trình sao lưu tự động hệ thống giám sát Zabbix (triển khai bằng Docker Compose + PostgreSQL) sang một máy chủ chia sẻ dữ liệu (Windows Server / NAS) và các bước khôi phục dịch vụ nhanh chóng sang một máy chủ hoàn toàn mới khi máy chủ cũ gặp sự cố nghiêm trọng (kể cả trường hợp hỏng phần cứng hoặc cháy nổ server vật lý).
-
+```
 ---
 
 ## PHẦN 1: CẤU HÌNH BACKUP TỰ ĐỘNG (Thực hiện trên Server đang chạy)
