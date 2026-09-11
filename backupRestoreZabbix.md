@@ -17,56 +17,66 @@ sudo nano /opt/zabbix_backup.sh
 **Bước 2: Cấu hình nội dung Script Backup**
 ```bash
 #!/bin/bash
+set -o pipefail # Đảm bảo bắt lỗi ngay cả khi dùng pipeline
+
 BACKUP_DIR="/backup/zabbix"
-mkdir -p $BACKUP_DIR    # <--- Thêm dòng này để tự động tạo thư mục nếu nó bị xóa mất
+mkdir -p "$BACKUP_DIR"
 DATE=$(date +"%Y%m%d_%H%M")
 ZABBIX_DIR="/opt/zabbix"
 
 # 1. ĐỌC BIẾN TỪ FILE .ENV CỦA DỰ ÁN
 if [ -f "$ZABBIX_DIR/.env" ]; then
-    # Lệnh set -a giúp export tự động các biến trong .env ra môi trường
     set -a
     source "$ZABBIX_DIR/.env"
     set +a
 else
-    echo "LỖI: Không tìm thấy file $ZABBIX_DIR/.env. Dừng backup!"
+    echo "[$(date)] LỖI: Không tìm thấy file $ZABBIX_DIR/.env. Dừng backup!" >&2
     exit 1
 fi
 
-# 2. GÁN BIẾN (Lấy giá trị từ .env)
-DB_CONTAINER="zabbix-postgres" # Tên container vẫn cố định theo docker-compose
-DB_USER="$POSTGRES_USER"
-DB_NAME="$POSTGRES_DB"
+# 2. GÁN BIẾN
+DB_CONTAINER="zabbix-postgres"
+DB_USER="${POSTGRES_USER:-zabbix}"
+DB_NAME="${POSTGRES_DB:-zabbix}"
 KEEP_DAYS=7
 
-echo "=== Bắt đầu Backup Zabbix ($DATE) ==="
-echo "Đang dùng Database: $DB_NAME | User: $DB_USER"
+echo "=== [$(date)] Bắt đầu Backup Zabbix ($DATE) ==="
 
-# 3. Backup Database
-docker exec $DB_CONTAINER pg_dump -U $DB_USER --format=custom $DB_NAME > $BACKUP_DIR/zabbix_db_$DATE.dump
+# 3. Backup Database & Kiểm tra lỗi
+echo "Đang dump database $DB_NAME từ container $DB_CONTAINER..."
+docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" --format=custom "$DB_NAME" > "$BACKUP_DIR/zabbix_db_$DATE.dump"
 
-# 4. Backup thư mục cấu hình 
-tar -czvf $BACKUP_DIR/zabbix_config_$DATE.tar.gz -C /opt zabbix
-
-# 5. Gom lại thành 1 file duy nhất
-tar -czvf $BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz -C $BACKUP_DIR zabbix_db_$DATE.dump zabbix_config_$DATE.tar.gz
-
-# 6. Xóa các file trung gian
-rm -f $BACKUP_DIR/zabbix_db_$DATE.dump $BACKUP_DIR/zabbix_config_$DATE.tar.gz
-
-# 7. Xóa backup cũ trên máy Local (Ubuntu)
-find $BACKUP_DIR -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
-
-# Đồng bộ sang thư mục Share trên Windows Server
-if mountpoint -q /mnt/windows_backup; then
-    echo "Đang copy sang thư mục Share trên Windows Server..."
-    cp $BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz /mnt/windows_backup/
-    find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 -exec rm -f {} \;
-else
-    echo "CẢNH BÁO: Ổ mạng Windows Server chưa được kết nối hoặc có lỗi kết nối! Bỏ qua bước copy."
+if [ $? -ne 0 ] || [ ! -s "$BACKUP_DIR/zabbix_db_$DATE.dump" ]; then
+    echo "[$(date)] LỖI NGHIÊM TRỌNG: Backup Database thất bại hoặc file dump rỗng! Dừng script để bảo vệ backup cũ." >&2
+    rm -f "$BACKUP_DIR/zabbix_db_$DATE.dump"
+    exit 1
 fi
 
-echo "=== Backup Hoàn Tất ==="
+# 4. Backup thư mục cấu hình /opt/zabbix
+tar -czf "$BACKUP_DIR/zabbix_config_$DATE.tar.gz" -C /opt zabbix
+
+# 5. Gom lại thành 1 file duy nhất
+tar -cf "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar" -C "$BACKUP_DIR" "zabbix_db_$DATE.dump" "zabbix_config_$DATE.tar.gz"
+gzip -f "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar"
+
+# 6. Xóa các file trung gian
+rm -f "$BACKUP_DIR/zabbix_db_$DATE.dump" "$BACKUP_DIR/zabbix_config_$DATE.tar.gz"
+
+# 7. Xóa backup cũ trên máy Local
+find "$BACKUP_DIR" -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +$KEEP_DAYS -exec rm -f {} \;
+
+# 8. Đồng bộ sang thư mục Share trên Windows Server
+if mountpoint -q /mnt/windows_backup; then
+    echo "Đang copy sang Windows Server..."
+    cp "$BACKUP_DIR/ZABBIX_FULL_BACKUP_$DATE.tar.gz" /mnt/windows_backup/
+    find /mnt/windows_backup -name "ZABBIX_FULL_BACKUP_*.tar.gz" -type f -mtime +14 -exec rm -f {} \;
+    echo "Đồng bộ Windows Server thành công."
+else
+    echo "CẢNH BÁO: Thư mục /mnt/windows_backup chưa mount! Bỏ qua bước copy off-site." >&2
+fi
+
+echo "=== [$(date)] Backup Hoàn Tất Thành Công! ==="
+
 ```
 
 **Bước 3: Phân quyền và đặt lịch chạy tự động**
@@ -125,8 +135,9 @@ sudo nano /etc/fstab
 #Kéo xuống DƯỚI CÙNG của file, thêm dòng sau. Nhớ thay đổi 192.168.1.10 thành IP thực tế của Windows Server và Zabbix_Backup thành tên thư mục share:
 
 ```bash
-//192.168.1.10/Zabbix_Backup /mnt/windows_backup cifs credentials=/root/.smb_creds,iocharset=utf8,file_mode=0777,dir_mode=0777,noperm,vers=3.0 0 0
+//192.168.1.10/Zabbix_Backup /mnt/windows_backup cifs credentials=/root/.smb_creds,iocharset=utf8,file_mode=0777,dir_mode=0777,noperm,vers=3.0,_netdev,nofail,x-systemd.automount 0 0
 ```
+#Bắt buộc phải thêm các tham số _netdev, nofail, x-systemd.automount để hệ thống hiểu đây là ổ mạng (chỉ mount khi đã có mạng và không chặn quá trình boot nếu ổ Windows offline)
 #(Tham số vers=3.0 để ép Ubuntu dùng chuẩn SMB phiên bản 3.0 an toàn và tương thích tốt nhất với Windows Server đời mới). Lưu file lại và chạy lệnh sau để kết nối ngay lập tức:
 
 ```bash
@@ -191,9 +202,21 @@ sudo docker compose up -d postgres-server
 
 
 #Bước 4: Đưa dữ liệu (Restore) vào Database. Dùng file .dump đã giải nén ở /tmp để khôi phục cấu trúc và dữ liệu:
+
+Kiểm tra chắc chắn PostgreSQL đã sẵn sàng nhận kết nối trước khi restore:
 ```bash
-cat /tmp/zabbix_db_xxxx.dump | sudo docker exec -i zabbix-postgres pg_restore -U zabbix -d zabbix --clean --if-exists
+sudo docker exec zabbix-postgres pg_isready
 ```
+(Chờ đến khi màn hình hiển thị: accepting connections)
+```bash
+# 1. Di chuyển vào thư mục Zabbix và nạp biến từ file .env
+cd /opt/zabbix
+set -a && source .env && set +a
+# 2. Chạy lệnh Restore (Tự động lấy đúng User và DB Name trong .env)
+cat /tmp/zabbix_db_*.dump | sudo docker exec -i zabbix-postgres pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists
+```
+Bỏ qua các thông báo lỗi liên quan đến owner hoặc extension trong quá trình restore, chỉ cần sau khi hoàn tất Zabbix Server kết nối thành công là được
+(Thời gian chạy tùy thuộc vào dung lượng database cũ, thường mất từ 10 giây đến vài phút).
 <img width="1549" height="535" alt="image" src="https://github.com/user-attachments/assets/2983837b-2c19-43e3-bab8-4d93f8096b44" />
 
 
